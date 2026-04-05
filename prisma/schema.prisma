@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+	provider = "prisma-client"
+	output   = "../app/generated/prisma"
+}
+
+datasource db {
+	provider = "postgresql"
+}
+
+enum SmtpConfigKey {
+	CAREER
+	CONTACTS
+	NEWRECIPE
+	CONTACTS_POPUP
+	MAIN
+}
+
+model AdminUser {
+	id                  String         @id @default(cuid())
+	email               String         @unique
+	passwordHash        String
+	isActive            Boolean        @default(true)
+	failedLoginAttempts Int            @default(0)
+	lockedUntil         DateTime?
+	createdAt           DateTime       @default(now())
+	updatedAt           DateTime       @updatedAt
+
+	totp                AdminTotp?
+	sessions            AdminSession[]
+	auditLogs           AuditLog[]
+	smtpConfigsUpdated  SmtpConfig[]
+}
+
+model AdminTotp {
+	id              String    @id @default(cuid())
+	userId          String    @unique
+	secretEncrypted String
+	isEnabled       Boolean   @default(false)
+	createdAt       DateTime  @default(now())
+	updatedAt       DateTime  @updatedAt
+
+	user            AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminSession {
+	id               String    @id @default(cuid())
+	userId           String
+	sessionTokenHash String    @unique
+	expiresAt        DateTime
+	lastSeenAt       DateTime  @default(now())
+	ipAddress        String?
+	userAgent        String?
+	createdAt        DateTime  @default(now())
+
+	user             AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId])
+	@@index([expiresAt])
+}
+
+model SmtpConfig {
+	id                    String         @id @default(cuid())
+	key                   SmtpConfigKey  @unique
+	smtpUser              String?
+	smtpPasswordEncrypted String?
+	recipient             String?
+	smtpHost              String?
+	smtpPort              Int?
+	updatedByUserId       String?
+	createdAt             DateTime       @default(now())
+	updatedAt             DateTime       @updatedAt
+
+	updatedByUser         AdminUser?     @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+	id          String     @id @default(cuid())
+	actorUserId String?
+	action      String
+	targetType  String
+	targetId    String?
+	ipAddress   String?
+	createdAt   DateTime   @default(now())
+
+	actorUser   AdminUser? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+	@@index([actorUserId])
+	@@index([createdAt])
+}
