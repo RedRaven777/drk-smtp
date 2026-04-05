@@ -1,24 +1,38 @@
-export const fakeUser = {
-  email: "flameraven.pro@gmail.com",
-  password: "123456",
-  totp: "123456",
-};
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getSessionByToken, getSessionCookieName } from "@/lib/session";
 
-export function isValidLogin(data: {
-  email: string;
-  password: string;
-  totp: string;
-}) {
-  return (
-    data.email === fakeUser.email &&
-    data.password === fakeUser.password &&
-    data.totp === fakeUser.totp
-  );
+export async function getCurrentAdminUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getSessionCookieName())?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  const session = await getSessionByToken(token);
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.expiresAt <= new Date()) {
+    return null;
+  }
+
+  if (!session.user.isActive) {
+    return null;
+  }
+
+  return session.user;
 }
 
-export function isValidReset(data: {
-  email: string;
-  totp: string;
-}) {
-  return data.email === fakeUser.email && data.totp === fakeUser.totp;
+export async function requireAdminUser() {
+  const user = await getCurrentAdminUser();
+
+  if (!user) {
+    redirect("/");
+  }
+
+  return user;
 }

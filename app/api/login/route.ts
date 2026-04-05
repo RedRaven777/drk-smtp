@@ -1,33 +1,89 @@
 import { NextResponse } from "next/server";
-import { loginSchema } from "@/lib/schemas";
-import { isValidLogin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword } from "@/lib/password";
+import { createSession, getSessionCookieName } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const parsed = loginSchema.safeParse(body);
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const password = String(body.password ?? "");
+    const totp = String(body.totp ?? "").trim();
 
-    if (!parsed.success) {
+    const user = await prisma.adminUser.findUnique({
+      where: { email },
+      include: { totp: true },
+    });
+
+    if (!user || !user.isActive) {
       return NextResponse.json(
-        { message: "Invalid input", errors: parsed.error.flatten() },
-        { status: 400 }
+        { message: "Invalid credentials" },
+        { status: 401 }
       );
     }
 
-    if (!isValidLogin(parsed.data)) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      return NextResponse.json(
+        { message: "Account temporarily locked" },
+        { status: 423 }
+      );
     }
+
+    const passwordOk = await verifyPassword(password, user.passwordHash);
+
+    if (!passwordOk) {
+      await prisma.adminUser.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: { increment: 1 },
+        },
+      });
+
+      return NextResponse.json(
+        { message: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    // TOTP verification підключимо наступним кроком.
+    if (user.totp?.isEnabled) {
+      if (!totp) {
+        return NextResponse.json(
+          { message: "TOTP code is required" },
+          { status: 401 }
+        );
+      }
+    }
+
+    await prisma.adminUser.update({
+      where: { id: user.id },
+      data: {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+
+    const userAgent = req.headers.get("user-agent");
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+
+    const { token, expiresAt } = await createSession({
+      userId: user.id,
+      userAgent,
+      ipAddress,
+      ttlSeconds: 60 * 30,
+    });
 
     const res = NextResponse.json({ message: "Logged in" });
 
     res.cookies.set({
-      name: "auth",
-      value: "true",
+      name: getSessionCookieName(),
+      value: token,
       httpOnly: true,
-      path: "/",
-      maxAge: 5 * 60,
-      sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
     });
 
     return res;

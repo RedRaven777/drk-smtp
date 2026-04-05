@@ -1,14 +1,7 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
+import { requireAdminUser } from "@/lib/auth";
 
 export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get("auth")?.value;
-
-  if (auth !== "true") {
-    redirect("/");
-  }
-
+  await requireAdminUser();
   return <DashboardClient />;
 }

@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const SESSION_COOKIE_NAME = "admin_session";
+
 export function middleware(req: NextRequest) {
-  const auth = req.cookies.get("auth")?.value;
+  const sessionToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   const url = req.nextUrl.clone();
 
-  if (url.pathname.startsWith("/admin") && auth !== "true") {
+  if (url.pathname.startsWith("/admin") && !sessionToken) {
     url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
-  if (url.pathname === "/" && auth === "true") {
+  if (url.pathname === "/" && sessionToken) {
     url.pathname = "/admin/dashboard";
     return NextResponse.redirect(url);
   }
