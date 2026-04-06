@@ -11,35 +11,33 @@ export type SmtpConfigKey =
 
 export type SmtpFormState = {
   user: string;
-  password: string;
-  recipient: string;
-  hasPassword?: boolean;
-};
-
-export type MainSettingsState = {
+  currentPassword: string;
+  newPassword: string;
+  currentRecipient: string;
+  newRecipient: string;
   smtpHost: string;
   smtpPort: string;
-  hasPassword?: boolean;
+  hasPassword: boolean;
+  hasRecipient: boolean;
 };
 
 export type AdminSmtpConfigDto = {
   key: SmtpConfigKey;
   smtpUser: string;
-  recipient: string;
   smtpHost: string;
   smtpPort: number | null;
   hasPassword: boolean;
+  hasRecipient: boolean;
 };
 
 export const initialSmtpForm: SmtpFormState = {
   user: "",
-  password: "",
-  recipient: "",
-  hasPassword: false,
-};
-
-export const initialMainSettings: MainSettingsState = {
+  currentPassword: "",
+  newPassword: "",
+  currentRecipient: "",
+  newRecipient: "",
   smtpHost: "",
   smtpPort: "",
   hasPassword: false,
+  hasRecipient: false,
 };

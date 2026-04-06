@@ -119,7 +119,7 @@ export const SmtpConfigScalarFieldEnum = {
   key: 'key',
   smtpUser: 'smtpUser',
   smtpPasswordEncrypted: 'smtpPasswordEncrypted',
-  recipient: 'recipient',
+  recipientEncrypted: 'recipientEncrypted',
   smtpHost: 'smtpHost',
   smtpPort: 'smtpPort',
   updatedByUserId: 'updatedByUserId',

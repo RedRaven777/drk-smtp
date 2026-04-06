@@ -39,7 +39,7 @@ export type SmtpConfigMinAggregateOutputType = {
   key: $Enums.SmtpConfigKey | null
   smtpUser: string | null
   smtpPasswordEncrypted: string | null
-  recipient: string | null
+  recipientEncrypted: string | null
   smtpHost: string | null
   smtpPort: number | null
   updatedByUserId: string | null
@@ -52,7 +52,7 @@ export type SmtpConfigMaxAggregateOutputType = {
   key: $Enums.SmtpConfigKey | null
   smtpUser: string | null
   smtpPasswordEncrypted: string | null
-  recipient: string | null
+  recipientEncrypted: string | null
   smtpHost: string | null
   smtpPort: number | null
   updatedByUserId: string | null
@@ -65,7 +65,7 @@ export type SmtpConfigCountAggregateOutputType = {
   key: number
   smtpUser: number
   smtpPasswordEncrypted: number
-  recipient: number
+  recipientEncrypted: number
   smtpHost: number
   smtpPort: number
   updatedByUserId: number
@@ -88,7 +88,7 @@ export type SmtpConfigMinAggregateInputType = {
   key?: true
   smtpUser?: true
   smtpPasswordEncrypted?: true
-  recipient?: true
+  recipientEncrypted?: true
   smtpHost?: true
   smtpPort?: true
   updatedByUserId?: true
@@ -101,7 +101,7 @@ export type SmtpConfigMaxAggregateInputType = {
   key?: true
   smtpUser?: true
   smtpPasswordEncrypted?: true
-  recipient?: true
+  recipientEncrypted?: true
   smtpHost?: true
   smtpPort?: true
   updatedByUserId?: true
@@ -114,7 +114,7 @@ export type SmtpConfigCountAggregateInputType = {
   key?: true
   smtpUser?: true
   smtpPasswordEncrypted?: true
-  recipient?: true
+  recipientEncrypted?: true
   smtpHost?: true
   smtpPort?: true
   updatedByUserId?: true
@@ -214,7 +214,7 @@ export type SmtpConfigGroupByOutputType = {
   key: $Enums.SmtpConfigKey
   smtpUser: string | null
   smtpPasswordEncrypted: string | null
-  recipient: string | null
+  recipientEncrypted: string | null
   smtpHost: string | null
   smtpPort: number | null
   updatedByUserId: string | null
@@ -250,7 +250,7 @@ export type SmtpConfigWhereInput = {
   key?: Prisma.EnumSmtpConfigKeyFilter<"SmtpConfig"> | $Enums.SmtpConfigKey
   smtpUser?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPasswordEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
-  recipient?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
+  recipientEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpHost?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPort?: Prisma.IntNullableFilter<"SmtpConfig"> | number | null
   updatedByUserId?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
@@ -264,7 +264,7 @@ export type SmtpConfigOrderByWithRelationInput = {
   key?: Prisma.SortOrder
   smtpUser?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpPasswordEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipient?: Prisma.SortOrderInput | Prisma.SortOrder
+  recipientEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpHost?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpPort?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -281,7 +281,7 @@ export type SmtpConfigWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SmtpConfigWhereInput | Prisma.SmtpConfigWhereInput[]
   smtpUser?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPasswordEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
-  recipient?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
+  recipientEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpHost?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPort?: Prisma.IntNullableFilter<"SmtpConfig"> | number | null
   updatedByUserId?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
@@ -295,7 +295,7 @@ export type SmtpConfigOrderByWithAggregationInput = {
   key?: Prisma.SortOrder
   smtpUser?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpPasswordEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipient?: Prisma.SortOrderInput | Prisma.SortOrder
+  recipientEncrypted?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpHost?: Prisma.SortOrderInput | Prisma.SortOrder
   smtpPort?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -316,7 +316,7 @@ export type SmtpConfigScalarWhereWithAggregatesInput = {
   key?: Prisma.EnumSmtpConfigKeyWithAggregatesFilter<"SmtpConfig"> | $Enums.SmtpConfigKey
   smtpUser?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
   smtpPasswordEncrypted?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
-  recipient?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
+  recipientEncrypted?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
   smtpHost?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
   smtpPort?: Prisma.IntNullableWithAggregatesFilter<"SmtpConfig"> | number | null
   updatedByUserId?: Prisma.StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
@@ -329,7 +329,7 @@ export type SmtpConfigCreateInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   createdAt?: Date | string
@@ -342,7 +342,7 @@ export type SmtpConfigUncheckedCreateInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   updatedByUserId?: string | null
@@ -355,7 +355,7 @@ export type SmtpConfigUpdateInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -368,7 +368,7 @@ export type SmtpConfigUncheckedUpdateInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -381,7 +381,7 @@ export type SmtpConfigCreateManyInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   updatedByUserId?: string | null
@@ -394,7 +394,7 @@ export type SmtpConfigUpdateManyMutationInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -406,7 +406,7 @@ export type SmtpConfigUncheckedUpdateManyInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -429,7 +429,7 @@ export type SmtpConfigCountOrderByAggregateInput = {
   key?: Prisma.SortOrder
   smtpUser?: Prisma.SortOrder
   smtpPasswordEncrypted?: Prisma.SortOrder
-  recipient?: Prisma.SortOrder
+  recipientEncrypted?: Prisma.SortOrder
   smtpHost?: Prisma.SortOrder
   smtpPort?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
@@ -446,7 +446,7 @@ export type SmtpConfigMaxOrderByAggregateInput = {
   key?: Prisma.SortOrder
   smtpUser?: Prisma.SortOrder
   smtpPasswordEncrypted?: Prisma.SortOrder
-  recipient?: Prisma.SortOrder
+  recipientEncrypted?: Prisma.SortOrder
   smtpHost?: Prisma.SortOrder
   smtpPort?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
@@ -459,7 +459,7 @@ export type SmtpConfigMinOrderByAggregateInput = {
   key?: Prisma.SortOrder
   smtpUser?: Prisma.SortOrder
   smtpPasswordEncrypted?: Prisma.SortOrder
-  recipient?: Prisma.SortOrder
+  recipientEncrypted?: Prisma.SortOrder
   smtpHost?: Prisma.SortOrder
   smtpPort?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
@@ -530,7 +530,7 @@ export type SmtpConfigCreateWithoutUpdatedByUserInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   createdAt?: Date | string
@@ -542,7 +542,7 @@ export type SmtpConfigUncheckedCreateWithoutUpdatedByUserInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   createdAt?: Date | string
@@ -583,7 +583,7 @@ export type SmtpConfigScalarWhereInput = {
   key?: Prisma.EnumSmtpConfigKeyFilter<"SmtpConfig"> | $Enums.SmtpConfigKey
   smtpUser?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPasswordEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
-  recipient?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
+  recipientEncrypted?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpHost?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
   smtpPort?: Prisma.IntNullableFilter<"SmtpConfig"> | number | null
   updatedByUserId?: Prisma.StringNullableFilter<"SmtpConfig"> | string | null
@@ -596,7 +596,7 @@ export type SmtpConfigCreateManyUpdatedByUserInput = {
   key: $Enums.SmtpConfigKey
   smtpUser?: string | null
   smtpPasswordEncrypted?: string | null
-  recipient?: string | null
+  recipientEncrypted?: string | null
   smtpHost?: string | null
   smtpPort?: number | null
   createdAt?: Date | string
@@ -608,7 +608,7 @@ export type SmtpConfigUpdateWithoutUpdatedByUserInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -620,7 +620,7 @@ export type SmtpConfigUncheckedUpdateWithoutUpdatedByUserInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -632,7 +632,7 @@ export type SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserInput = {
   key?: Prisma.EnumSmtpConfigKeyFieldUpdateOperationsInput | $Enums.SmtpConfigKey
   smtpUser?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPasswordEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipient?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpHost?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   smtpPort?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -646,7 +646,7 @@ export type SmtpConfigSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   key?: boolean
   smtpUser?: boolean
   smtpPasswordEncrypted?: boolean
-  recipient?: boolean
+  recipientEncrypted?: boolean
   smtpHost?: boolean
   smtpPort?: boolean
   updatedByUserId?: boolean
@@ -660,7 +660,7 @@ export type SmtpConfigSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   key?: boolean
   smtpUser?: boolean
   smtpPasswordEncrypted?: boolean
-  recipient?: boolean
+  recipientEncrypted?: boolean
   smtpHost?: boolean
   smtpPort?: boolean
   updatedByUserId?: boolean
@@ -674,7 +674,7 @@ export type SmtpConfigSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   key?: boolean
   smtpUser?: boolean
   smtpPasswordEncrypted?: boolean
-  recipient?: boolean
+  recipientEncrypted?: boolean
   smtpHost?: boolean
   smtpPort?: boolean
   updatedByUserId?: boolean
@@ -688,7 +688,7 @@ export type SmtpConfigSelectScalar = {
   key?: boolean
   smtpUser?: boolean
   smtpPasswordEncrypted?: boolean
-  recipient?: boolean
+  recipientEncrypted?: boolean
   smtpHost?: boolean
   smtpPort?: boolean
   updatedByUserId?: boolean
@@ -696,7 +696,7 @@ export type SmtpConfigSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SmtpConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "smtpUser" | "smtpPasswordEncrypted" | "recipient" | "smtpHost" | "smtpPort" | "updatedByUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["smtpConfig"]>
+export type SmtpConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "smtpUser" | "smtpPasswordEncrypted" | "recipientEncrypted" | "smtpHost" | "smtpPort" | "updatedByUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["smtpConfig"]>
 export type SmtpConfigInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   updatedByUser?: boolean | Prisma.SmtpConfig$updatedByUserArgs<ExtArgs>
 }
@@ -717,7 +717,7 @@ export type $SmtpConfigPayload<ExtArgs extends runtime.Types.Extensions.Internal
     key: $Enums.SmtpConfigKey
     smtpUser: string | null
     smtpPasswordEncrypted: string | null
-    recipient: string | null
+    recipientEncrypted: string | null
     smtpHost: string | null
     smtpPort: number | null
     updatedByUserId: string | null
@@ -1151,7 +1151,7 @@ export interface SmtpConfigFieldRefs {
   readonly key: Prisma.FieldRef<"SmtpConfig", 'SmtpConfigKey'>
   readonly smtpUser: Prisma.FieldRef<"SmtpConfig", 'String'>
   readonly smtpPasswordEncrypted: Prisma.FieldRef<"SmtpConfig", 'String'>
-  readonly recipient: Prisma.FieldRef<"SmtpConfig", 'String'>
+  readonly recipientEncrypted: Prisma.FieldRef<"SmtpConfig", 'String'>
   readonly smtpHost: Prisma.FieldRef<"SmtpConfig", 'String'>
   readonly smtpPort: Prisma.FieldRef<"SmtpConfig", 'Int'>
   readonly updatedByUserId: Prisma.FieldRef<"SmtpConfig", 'String'>
