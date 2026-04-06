@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { createSession, getSessionCookieName } from "@/lib/session";
+import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
 
 export async function POST(req: Request) {
   try {
@@ -45,11 +46,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // TOTP verification підключимо наступним кроком.
     if (user.totp?.isEnabled) {
-      if (!totp) {
+      if (!/^\d{6}$/.test(totp)) {
         return NextResponse.json(
           { message: "TOTP code is required" },
+          { status: 401 }
+        );
+      }
+
+      const secretBase32 = decryptTotpSecret(user.totp.secretEncrypted);
+      const totpOk = verifyTotpCode({
+        secretBase32,
+        token: totp,
+      });
+
+      if (!totpOk) {
+        return NextResponse.json(
+          { message: "Invalid TOTP code" },
           { status: 401 }
         );
       }
@@ -87,7 +100,8 @@ export async function POST(req: Request) {
     });
 
     return res;
-  } catch {
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
     return NextResponse.json({ message: "Bad request" }, { status: 400 });
   }
 }

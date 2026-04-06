@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Paper, Stack, Typography, Alert } from "@mui/material";
 import SmtpHostInput from "../fields/SmtpHostInput";
 import SmtpPortInput from "../fields/SmtpPortInput";
 import type { MainSettingsState } from "@/types/dashboard";
@@ -9,12 +9,18 @@ type Props = {
   values: MainSettingsState;
   onChange: React.Dispatch<React.SetStateAction<MainSettingsState>>;
   onSubmit: () => void;
+  isSaving?: boolean;
+  message?: string;
+  error?: string;
 };
 
 export default function MainSettingsForm({
   values,
   onChange,
   onSubmit,
+  isSaving = false,
+  message = "",
+  error = "",
 }: Props) {
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
@@ -39,9 +45,12 @@ export default function MainSettingsForm({
           }
         />
 
+        {message ? <Alert severity="success">{message}</Alert> : null}
+        {error ? <Alert severity="error">{error}</Alert> : null}
+
         <Box>
-          <Button variant="contained" onClick={onSubmit}>
-            Save
+          <Button variant="contained" onClick={onSubmit} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </Box>
       </Stack>
