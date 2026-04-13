@@ -56,7 +56,9 @@ export const ModelName = {
   AdminSession: 'AdminSession',
   SmtpConfig: 'SmtpConfig',
   AuditLog: 'AuditLog',
-  LoginThrottle: 'LoginThrottle'
+  LoginThrottle: 'LoginThrottle',
+  AdminWebAuthnCredential: 'AdminWebAuthnCredential',
+  AdminWebAuthnChallenge: 'AdminWebAuthnChallenge'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -158,6 +160,35 @@ export const LoginThrottleScalarFieldEnum = {
 } as const
 
 export type LoginThrottleScalarFieldEnum = (typeof LoginThrottleScalarFieldEnum)[keyof typeof LoginThrottleScalarFieldEnum]
+
+
+export const AdminWebAuthnCredentialScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  credentialId: 'credentialId',
+  publicKey: 'publicKey',
+  counter: 'counter',
+  deviceType: 'deviceType',
+  backedUp: 'backedUp',
+  transports: 'transports',
+  name: 'name',
+  createdAt: 'createdAt',
+  lastUsedAt: 'lastUsedAt'
+} as const
+
+export type AdminWebAuthnCredentialScalarFieldEnum = (typeof AdminWebAuthnCredentialScalarFieldEnum)[keyof typeof AdminWebAuthnCredentialScalarFieldEnum]
+
+
+export const AdminWebAuthnChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  challenge: 'challenge',
+  type: 'type',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminWebAuthnChallengeScalarFieldEnum = (typeof AdminWebAuthnChallengeScalarFieldEnum)[keyof typeof AdminWebAuthnChallengeScalarFieldEnum]
 
 
 export const SortOrder = {

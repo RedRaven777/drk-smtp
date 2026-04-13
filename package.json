@@ -18,6 +18,8 @@
     "@mui/material-nextjs": "^7.3.9",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.0",
     "argon2": "^0.44.0",
     "next": "16.2.1",
     "otpauth": "^9.5.0",

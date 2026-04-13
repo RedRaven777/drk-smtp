@@ -47,3 +47,13 @@ export type AuditLog = Prisma.AuditLogModel
  * 
  */
 export type LoginThrottle = Prisma.LoginThrottleModel
+/**
+ * Model AdminWebAuthnCredential
+ * 
+ */
+export type AdminWebAuthnCredential = Prisma.AdminWebAuthnCredentialModel
+/**
+ * Model AdminWebAuthnChallenge
+ * 
+ */
+export type AdminWebAuthnChallenge = Prisma.AdminWebAuthnChallengeModel

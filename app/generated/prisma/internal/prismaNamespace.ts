@@ -389,7 +389,9 @@ export const ModelName = {
   AdminSession: 'AdminSession',
   SmtpConfig: 'SmtpConfig',
   AuditLog: 'AuditLog',
-  LoginThrottle: 'LoginThrottle'
+  LoginThrottle: 'LoginThrottle',
+  AdminWebAuthnCredential: 'AdminWebAuthnCredential',
+  AdminWebAuthnChallenge: 'AdminWebAuthnChallenge'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "adminUser" | "adminTotp" | "adminSession" | "smtpConfig" | "auditLog" | "loginThrottle"
+    modelProps: "adminUser" | "adminTotp" | "adminSession" | "smtpConfig" | "auditLog" | "loginThrottle" | "adminWebAuthnCredential" | "adminWebAuthnChallenge"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -853,6 +855,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AdminWebAuthnCredential: {
+      payload: Prisma.$AdminWebAuthnCredentialPayload<ExtArgs>
+      fields: Prisma.AdminWebAuthnCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminWebAuthnCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminWebAuthnCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminWebAuthnCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminWebAuthnCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.AdminWebAuthnCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.AdminWebAuthnCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.AdminWebAuthnCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminWebAuthnCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminWebAuthnCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        update: {
+          args: Prisma.AdminWebAuthnCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminWebAuthnCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminWebAuthnCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminWebAuthnCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminWebAuthnCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminWebAuthnCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminWebAuthnCredential>
+        }
+        groupBy: {
+          args: Prisma.AdminWebAuthnCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWebAuthnCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminWebAuthnCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWebAuthnCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
+    AdminWebAuthnChallenge: {
+      payload: Prisma.$AdminWebAuthnChallengePayload<ExtArgs>
+      fields: Prisma.AdminWebAuthnChallengeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminWebAuthnChallengeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminWebAuthnChallengeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        findFirst: {
+          args: Prisma.AdminWebAuthnChallengeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminWebAuthnChallengeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        findMany: {
+          args: Prisma.AdminWebAuthnChallengeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>[]
+        }
+        create: {
+          args: Prisma.AdminWebAuthnChallengeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        createMany: {
+          args: Prisma.AdminWebAuthnChallengeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminWebAuthnChallengeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>[]
+        }
+        delete: {
+          args: Prisma.AdminWebAuthnChallengeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        update: {
+          args: Prisma.AdminWebAuthnChallengeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminWebAuthnChallengeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminWebAuthnChallengeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminWebAuthnChallengeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminWebAuthnChallengeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWebAuthnChallengePayload>
+        }
+        aggregate: {
+          args: Prisma.AdminWebAuthnChallengeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminWebAuthnChallenge>
+        }
+        groupBy: {
+          args: Prisma.AdminWebAuthnChallengeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWebAuthnChallengeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminWebAuthnChallengeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWebAuthnChallengeCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -975,6 +1125,35 @@ export const LoginThrottleScalarFieldEnum = {
 } as const
 
 export type LoginThrottleScalarFieldEnum = (typeof LoginThrottleScalarFieldEnum)[keyof typeof LoginThrottleScalarFieldEnum]
+
+
+export const AdminWebAuthnCredentialScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  credentialId: 'credentialId',
+  publicKey: 'publicKey',
+  counter: 'counter',
+  deviceType: 'deviceType',
+  backedUp: 'backedUp',
+  transports: 'transports',
+  name: 'name',
+  createdAt: 'createdAt',
+  lastUsedAt: 'lastUsedAt'
+} as const
+
+export type AdminWebAuthnCredentialScalarFieldEnum = (typeof AdminWebAuthnCredentialScalarFieldEnum)[keyof typeof AdminWebAuthnCredentialScalarFieldEnum]
+
+
+export const AdminWebAuthnChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  challenge: 'challenge',
+  type: 'type',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminWebAuthnChallengeScalarFieldEnum = (typeof AdminWebAuthnChallengeScalarFieldEnum)[keyof typeof AdminWebAuthnChallengeScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1184,6 +1363,8 @@ export type GlobalOmitConfig = {
   smtpConfig?: Prisma.SmtpConfigOmit
   auditLog?: Prisma.AuditLogOmit
   loginThrottle?: Prisma.LoginThrottleOmit
+  adminWebAuthnCredential?: Prisma.AdminWebAuthnCredentialOmit
+  adminWebAuthnChallenge?: Prisma.AdminWebAuthnChallengeOmit
 }
 
 /* Types for Logging */

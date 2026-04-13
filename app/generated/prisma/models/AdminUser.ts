@@ -244,6 +244,7 @@ export type AdminUserWhereInput = {
   sessions?: Prisma.AdminSessionListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
   smtpConfigsUpdated?: Prisma.SmtpConfigListRelationFilter
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialListRelationFilter
 }
 
 export type AdminUserOrderByWithRelationInput = {
@@ -259,6 +260,7 @@ export type AdminUserOrderByWithRelationInput = {
   sessions?: Prisma.AdminSessionOrderByRelationAggregateInput
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   smtpConfigsUpdated?: Prisma.SmtpConfigOrderByRelationAggregateInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialOrderByRelationAggregateInput
 }
 
 export type AdminUserWhereUniqueInput = Prisma.AtLeast<{
@@ -277,6 +279,7 @@ export type AdminUserWhereUniqueInput = Prisma.AtLeast<{
   sessions?: Prisma.AdminSessionListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
   smtpConfigsUpdated?: Prisma.SmtpConfigListRelationFilter
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialListRelationFilter
 }, "id" | "email">
 
 export type AdminUserOrderByWithAggregationInput = {
@@ -322,6 +325,7 @@ export type AdminUserCreateInput = {
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUncheckedCreateInput = {
@@ -337,6 +341,7 @@ export type AdminUserUncheckedCreateInput = {
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUpdateInput = {
@@ -352,6 +357,7 @@ export type AdminUserUpdateInput = {
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserUncheckedUpdateInput = {
@@ -367,6 +373,7 @@ export type AdminUserUncheckedUpdateInput = {
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserCreateManyInput = {
@@ -537,6 +544,20 @@ export type AdminUserUpdateOneWithoutAuditLogsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AdminUserUpdateToOneWithWhereWithoutAuditLogsInput, Prisma.AdminUserUpdateWithoutAuditLogsInput>, Prisma.AdminUserUncheckedUpdateWithoutAuditLogsInput>
 }
 
+export type AdminUserCreateNestedOneWithoutWebauthnCredentialsInput = {
+  create?: Prisma.XOR<Prisma.AdminUserCreateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedCreateWithoutWebauthnCredentialsInput>
+  connectOrCreate?: Prisma.AdminUserCreateOrConnectWithoutWebauthnCredentialsInput
+  connect?: Prisma.AdminUserWhereUniqueInput
+}
+
+export type AdminUserUpdateOneRequiredWithoutWebauthnCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.AdminUserCreateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedCreateWithoutWebauthnCredentialsInput>
+  connectOrCreate?: Prisma.AdminUserCreateOrConnectWithoutWebauthnCredentialsInput
+  upsert?: Prisma.AdminUserUpsertWithoutWebauthnCredentialsInput
+  connect?: Prisma.AdminUserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AdminUserUpdateToOneWithWhereWithoutWebauthnCredentialsInput, Prisma.AdminUserUpdateWithoutWebauthnCredentialsInput>, Prisma.AdminUserUncheckedUpdateWithoutWebauthnCredentialsInput>
+}
+
 export type AdminUserCreateWithoutTotpInput = {
   id?: string
   email: string
@@ -549,6 +570,7 @@ export type AdminUserCreateWithoutTotpInput = {
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUncheckedCreateWithoutTotpInput = {
@@ -563,6 +585,7 @@ export type AdminUserUncheckedCreateWithoutTotpInput = {
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserCreateOrConnectWithoutTotpInput = {
@@ -593,6 +616,7 @@ export type AdminUserUpdateWithoutTotpInput = {
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserUncheckedUpdateWithoutTotpInput = {
@@ -607,6 +631,7 @@ export type AdminUserUncheckedUpdateWithoutTotpInput = {
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserCreateWithoutSessionsInput = {
@@ -621,6 +646,7 @@ export type AdminUserCreateWithoutSessionsInput = {
   totp?: Prisma.AdminTotpCreateNestedOneWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUncheckedCreateWithoutSessionsInput = {
@@ -635,6 +661,7 @@ export type AdminUserUncheckedCreateWithoutSessionsInput = {
   totp?: Prisma.AdminTotpUncheckedCreateNestedOneWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserCreateOrConnectWithoutSessionsInput = {
@@ -665,6 +692,7 @@ export type AdminUserUpdateWithoutSessionsInput = {
   totp?: Prisma.AdminTotpUpdateOneWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserUncheckedUpdateWithoutSessionsInput = {
@@ -679,6 +707,7 @@ export type AdminUserUncheckedUpdateWithoutSessionsInput = {
   totp?: Prisma.AdminTotpUncheckedUpdateOneWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserCreateWithoutSmtpConfigsUpdatedInput = {
@@ -693,6 +722,7 @@ export type AdminUserCreateWithoutSmtpConfigsUpdatedInput = {
   totp?: Prisma.AdminTotpCreateNestedOneWithoutUserInput
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUncheckedCreateWithoutSmtpConfigsUpdatedInput = {
@@ -707,6 +737,7 @@ export type AdminUserUncheckedCreateWithoutSmtpConfigsUpdatedInput = {
   totp?: Prisma.AdminTotpUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserCreateOrConnectWithoutSmtpConfigsUpdatedInput = {
@@ -737,6 +768,7 @@ export type AdminUserUpdateWithoutSmtpConfigsUpdatedInput = {
   totp?: Prisma.AdminTotpUpdateOneWithoutUserNestedInput
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserUncheckedUpdateWithoutSmtpConfigsUpdatedInput = {
@@ -751,6 +783,7 @@ export type AdminUserUncheckedUpdateWithoutSmtpConfigsUpdatedInput = {
   totp?: Prisma.AdminTotpUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserCreateWithoutAuditLogsInput = {
@@ -765,6 +798,7 @@ export type AdminUserCreateWithoutAuditLogsInput = {
   totp?: Prisma.AdminTotpCreateNestedOneWithoutUserInput
   sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserUncheckedCreateWithoutAuditLogsInput = {
@@ -779,6 +813,7 @@ export type AdminUserUncheckedCreateWithoutAuditLogsInput = {
   totp?: Prisma.AdminTotpUncheckedCreateNestedOneWithoutUserInput
   sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type AdminUserCreateOrConnectWithoutAuditLogsInput = {
@@ -809,6 +844,7 @@ export type AdminUserUpdateWithoutAuditLogsInput = {
   totp?: Prisma.AdminTotpUpdateOneWithoutUserNestedInput
   sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUpdateManyWithoutUserNestedInput
 }
 
 export type AdminUserUncheckedUpdateWithoutAuditLogsInput = {
@@ -823,6 +859,83 @@ export type AdminUserUncheckedUpdateWithoutAuditLogsInput = {
   totp?: Prisma.AdminTotpUncheckedUpdateOneWithoutUserNestedInput
   sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
   smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  webauthnCredentials?: Prisma.AdminWebAuthnCredentialUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type AdminUserCreateWithoutWebauthnCredentialsInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  isActive?: boolean
+  failedLoginAttempts?: number
+  lockedUntil?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  totp?: Prisma.AdminTotpCreateNestedOneWithoutUserInput
+  sessions?: Prisma.AdminSessionCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorUserInput
+  smtpConfigsUpdated?: Prisma.SmtpConfigCreateNestedManyWithoutUpdatedByUserInput
+}
+
+export type AdminUserUncheckedCreateWithoutWebauthnCredentialsInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  isActive?: boolean
+  failedLoginAttempts?: number
+  lockedUntil?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  totp?: Prisma.AdminTotpUncheckedCreateNestedOneWithoutUserInput
+  sessions?: Prisma.AdminSessionUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorUserInput
+  smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedCreateNestedManyWithoutUpdatedByUserInput
+}
+
+export type AdminUserCreateOrConnectWithoutWebauthnCredentialsInput = {
+  where: Prisma.AdminUserWhereUniqueInput
+  create: Prisma.XOR<Prisma.AdminUserCreateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedCreateWithoutWebauthnCredentialsInput>
+}
+
+export type AdminUserUpsertWithoutWebauthnCredentialsInput = {
+  update: Prisma.XOR<Prisma.AdminUserUpdateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedUpdateWithoutWebauthnCredentialsInput>
+  create: Prisma.XOR<Prisma.AdminUserCreateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedCreateWithoutWebauthnCredentialsInput>
+  where?: Prisma.AdminUserWhereInput
+}
+
+export type AdminUserUpdateToOneWithWhereWithoutWebauthnCredentialsInput = {
+  where?: Prisma.AdminUserWhereInput
+  data: Prisma.XOR<Prisma.AdminUserUpdateWithoutWebauthnCredentialsInput, Prisma.AdminUserUncheckedUpdateWithoutWebauthnCredentialsInput>
+}
+
+export type AdminUserUpdateWithoutWebauthnCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  failedLoginAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  totp?: Prisma.AdminTotpUpdateOneWithoutUserNestedInput
+  sessions?: Prisma.AdminSessionUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutActorUserNestedInput
+  smtpConfigsUpdated?: Prisma.SmtpConfigUpdateManyWithoutUpdatedByUserNestedInput
+}
+
+export type AdminUserUncheckedUpdateWithoutWebauthnCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  failedLoginAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  lockedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  totp?: Prisma.AdminTotpUncheckedUpdateOneWithoutUserNestedInput
+  sessions?: Prisma.AdminSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorUserNestedInput
+  smtpConfigsUpdated?: Prisma.SmtpConfigUncheckedUpdateManyWithoutUpdatedByUserNestedInput
 }
 
 
@@ -834,12 +947,14 @@ export type AdminUserCountOutputType = {
   sessions: number
   auditLogs: number
   smtpConfigsUpdated: number
+  webauthnCredentials: number
 }
 
 export type AdminUserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | AdminUserCountOutputTypeCountSessionsArgs
   auditLogs?: boolean | AdminUserCountOutputTypeCountAuditLogsArgs
   smtpConfigsUpdated?: boolean | AdminUserCountOutputTypeCountSmtpConfigsUpdatedArgs
+  webauthnCredentials?: boolean | AdminUserCountOutputTypeCountWebauthnCredentialsArgs
 }
 
 /**
@@ -873,6 +988,13 @@ export type AdminUserCountOutputTypeCountSmtpConfigsUpdatedArgs<ExtArgs extends 
   where?: Prisma.SmtpConfigWhereInput
 }
 
+/**
+ * AdminUserCountOutputType without action
+ */
+export type AdminUserCountOutputTypeCountWebauthnCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdminWebAuthnCredentialWhereInput
+}
+
 
 export type AdminUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -887,6 +1009,7 @@ export type AdminUserSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   sessions?: boolean | Prisma.AdminUser$sessionsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.AdminUser$auditLogsArgs<ExtArgs>
   smtpConfigsUpdated?: boolean | Prisma.AdminUser$smtpConfigsUpdatedArgs<ExtArgs>
+  webauthnCredentials?: boolean | Prisma.AdminUser$webauthnCredentialsArgs<ExtArgs>
   _count?: boolean | Prisma.AdminUserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["adminUser"]>
 
@@ -929,6 +1052,7 @@ export type AdminUserInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   sessions?: boolean | Prisma.AdminUser$sessionsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.AdminUser$auditLogsArgs<ExtArgs>
   smtpConfigsUpdated?: boolean | Prisma.AdminUser$smtpConfigsUpdatedArgs<ExtArgs>
+  webauthnCredentials?: boolean | Prisma.AdminUser$webauthnCredentialsArgs<ExtArgs>
   _count?: boolean | Prisma.AdminUserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AdminUserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -941,6 +1065,7 @@ export type $AdminUserPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     sessions: Prisma.$AdminSessionPayload<ExtArgs>[]
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     smtpConfigsUpdated: Prisma.$SmtpConfigPayload<ExtArgs>[]
+    webauthnCredentials: Prisma.$AdminWebAuthnCredentialPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1349,6 +1474,7 @@ export interface Prisma__AdminUserClient<T, Null = never, ExtArgs extends runtim
   sessions<T extends Prisma.AdminUser$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminUser$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   auditLogs<T extends Prisma.AdminUser$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminUser$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   smtpConfigsUpdated<T extends Prisma.AdminUser$smtpConfigsUpdatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminUser$smtpConfigsUpdatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SmtpConfigPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  webauthnCredentials<T extends Prisma.AdminUser$webauthnCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminUser$webauthnCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminWebAuthnCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1867,6 +1993,30 @@ export type AdminUser$smtpConfigsUpdatedArgs<ExtArgs extends runtime.Types.Exten
   take?: number
   skip?: number
   distinct?: Prisma.SmtpConfigScalarFieldEnum | Prisma.SmtpConfigScalarFieldEnum[]
+}
+
+/**
+ * AdminUser.webauthnCredentials
+ */
+export type AdminUser$webauthnCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminWebAuthnCredential
+   */
+  select?: Prisma.AdminWebAuthnCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AdminWebAuthnCredential
+   */
+  omit?: Prisma.AdminWebAuthnCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminWebAuthnCredentialInclude<ExtArgs> | null
+  where?: Prisma.AdminWebAuthnCredentialWhereInput
+  orderBy?: Prisma.AdminWebAuthnCredentialOrderByWithRelationInput | Prisma.AdminWebAuthnCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.AdminWebAuthnCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdminWebAuthnCredentialScalarFieldEnum | Prisma.AdminWebAuthnCredentialScalarFieldEnum[]
 }
 
 /**

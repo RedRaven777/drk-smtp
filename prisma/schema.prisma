@@ -1,106 +1,137 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+	provider = "prisma-client"
+	output   = "../app/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+	provider = "postgresql"
 }
 
 enum SmtpConfigKey {
-  CAREER
-  CONTACTS
-  NEWRECIPE
-  CONTACTS_POPUP
-  MAIN
+	CAREER
+	CONTACTS
+	NEWRECIPE
+	CONTACTS_POPUP
+	MAIN
 }
 
 model AdminUser {
-  id                  String         @id @default(cuid())
-  email               String         @unique
-  passwordHash        String
-  isActive            Boolean        @default(true)
-  failedLoginAttempts Int            @default(0)
-  lockedUntil         DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+	id                  String                   @id @default(cuid())
+	email               String                   @unique
+	passwordHash        String
+	isActive            Boolean                  @default(true)
+	failedLoginAttempts Int                      @default(0)
+	lockedUntil         DateTime?
+	createdAt           DateTime                 @default(now())
+	updatedAt           DateTime                 @updatedAt
 
-  totp                AdminTotp?
-  sessions            AdminSession[]
-  auditLogs           AuditLog[]
-  smtpConfigsUpdated  SmtpConfig[]
+	totp                AdminTotp?
+	sessions            AdminSession[]
+	auditLogs           AuditLog[]
+	smtpConfigsUpdated  SmtpConfig[]
+	webauthnCredentials AdminWebAuthnCredential[]
 }
 
 model AdminTotp {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  secretEncrypted String
-  isEnabled       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+	id              String    @id @default(cuid())
+	userId          String    @unique
+	secretEncrypted String
+	isEnabled       Boolean   @default(false)
+	createdAt       DateTime  @default(now())
+	updatedAt       DateTime  @updatedAt
 
-  user            AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+	user            AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AdminSession {
-  id               String    @id @default(cuid())
-  userId           String
-  sessionTokenHash String    @unique
-  expiresAt        DateTime
-  absoluteExpiresAt DateTime
-  lastSeenAt       DateTime  @default(now())
-  ipAddress        String?
-  userAgent        String?
-  createdAt        DateTime  @default(now())
+	id                String    @id @default(cuid())
+	userId            String
+	sessionTokenHash  String    @unique
+	expiresAt         DateTime
+	absoluteExpiresAt DateTime
+	lastSeenAt        DateTime  @default(now())
+	ipAddress         String?
+	userAgent         String?
+	createdAt         DateTime  @default(now())
 
-  user             AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+	user              AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([expiresAt])
-  @@index([absoluteExpiresAt])
+	@@index([userId])
+	@@index([expiresAt])
+	@@index([absoluteExpiresAt])
 }
 
 model SmtpConfig {
-  id                    String         @id @default(cuid())
-  key                   SmtpConfigKey  @unique
-  smtpUser              String?
-  smtpPasswordEncrypted String?
-  recipientEncrypted    String?
-  smtpHost              String?
-  smtpPort              Int?
-  updatedByUserId       String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+	id                    String         @id @default(cuid())
+	key                   SmtpConfigKey  @unique
+	smtpUser              String?
+	smtpPasswordEncrypted String?
+	recipientEncrypted    String?
+	smtpHost              String?
+	smtpPort              Int?
+	updatedByUserId       String?
+	createdAt             DateTime       @default(now())
+	updatedAt             DateTime       @updatedAt
 
-  updatedByUser         AdminUser?     @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+	updatedByUser         AdminUser?     @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
 }
 
 model AuditLog {
-  id          String     @id @default(cuid())
-  actorUserId String?
-  action      String
-  targetType  String
-  targetId    String?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime   @default(now())
+	id          String     @id @default(cuid())
+	actorUserId String?
+	action      String
+	targetType  String
+	targetId    String?
+	ipAddress   String?
+	userAgent   String?
+	createdAt   DateTime   @default(now())
 
-  actorUser   AdminUser? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+	actorUser   AdminUser? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
-  @@index([actorUserId])
-  @@index([createdAt])
-  @@index([action])
+	@@index([actorUserId])
+	@@index([createdAt])
+	@@index([action])
 }
 
 model LoginThrottle {
-  id            String   @id @default(cuid())
-  scope         String   @unique
-  count         Int      @default(0)
-  firstAttemptAt DateTime @default(now())
-  lastAttemptAt DateTime @default(now())
-  blockedUntil  DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+	id             String   @id @default(cuid())
+	scope           String   @unique
+	count           Int      @default(0)
+	firstAttemptAt  DateTime @default(now())
+	lastAttemptAt   DateTime @default(now())
+	blockedUntil    DateTime?
+	createdAt       DateTime @default(now())
+	updatedAt       DateTime @updatedAt
 
-  @@index([blockedUntil])
+	@@index([blockedUntil])
+}
+
+model AdminWebAuthnCredential {
+	id                   String    @id @default(cuid())
+	userId               String
+	credentialId         String    @unique
+	publicKey            String
+	counter              Int
+	deviceType           String
+	backedUp             Boolean
+	transports           String?
+	name                 String?
+	createdAt            DateTime  @default(now())
+	lastUsedAt           DateTime?
+
+	user                 AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId])
+}
+
+model AdminWebAuthnChallenge {
+	id          String   @id @default(cuid())
+	userId      String
+	challenge   String
+	type        String
+	expiresAt   DateTime
+	createdAt   DateTime @default(now())
+
+	@@index([userId])
+	@@index([expiresAt])
 }

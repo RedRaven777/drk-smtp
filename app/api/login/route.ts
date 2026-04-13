@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
-import { createSession, getSessionCookieName } from "@/lib/session";
 import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
 import { isAppInitialized } from "@/lib/bootstrap";
 import {
@@ -10,6 +9,11 @@ import {
   recordLoginFailure,
 } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { createWebAuthnAuthenticationOptions } from "@/lib/webauthn";
+import {
+  PENDING_WEBAUTHN_LOGIN_COOKIE,
+  serializePendingWebAuthnLogin,
+} from "@/lib/pending-webauthn-login";
 
 const ACCOUNT_LOCKOUT_THRESHOLD = 5;
 const ACCOUNT_LOCKOUT_MINUTES = 15;
@@ -60,7 +64,10 @@ export async function POST(req: Request) {
 
     const user = await prisma.adminUser.findUnique({
       where: { email },
-      include: { totp: true },
+      include: {
+        totp: true,
+        webauthnCredentials: true,
+      },
     });
 
     if (!user || !user.isActive) {
@@ -161,9 +168,7 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(
-          {
-            message: "TOTP code is required",
-          },
+          { message: "TOTP code is required" },
           { status: 401 }
         );
       }
@@ -212,6 +217,13 @@ export async function POST(req: Request) {
       }
     }
 
+    if (user.webauthnCredentials.length < 2) {
+      return NextResponse.json(
+        { message: "At least 2 security keys are required" },
+        { status: 403 }
+      );
+    }
+
     await prisma.adminUser.update({
       where: { id: user.id },
       data: {
@@ -222,33 +234,23 @@ export async function POST(req: Request) {
 
     await clearLoginFailures({ ipAddress, email });
 
-    const { token, expiresAt } = await createSession({
+    const options = await createWebAuthnAuthenticationOptions({
       userId: user.id,
-      userAgent,
-      ipAddress,
-      idleTtlSeconds: 15 * 60,
-      absoluteTtlSeconds: 8 * 60 * 60,
     });
 
-    await createAuditLog({
-      actorUserId: user.id,
-      action: "LOGIN_SUCCESS",
-      targetType: "AdminUser",
-      targetId: user.id,
-      ipAddress,
-      userAgent,
+    const res = NextResponse.json({
+      requiresWebAuthn: true,
+      options,
     });
-
-    const res = NextResponse.json({ message: "Logged in" });
 
     res.cookies.set({
-      name: getSessionCookieName(),
-      value: token,
+      name: PENDING_WEBAUTHN_LOGIN_COOKIE,
+      value: serializePendingWebAuthnLogin({ userId: user.id }),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      expires: expiresAt,
+      maxAge: 10 * 60,
     });
 
     return res;

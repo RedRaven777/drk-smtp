@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { startAuthentication } from "@simplewebauthn/browser";
 
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
 import EmailField from "./fields/EmailField";
@@ -48,8 +49,39 @@ export default function LoginForm() {
       return;
     }
 
-    router.replace("/admin/dashboard");
-    router.refresh();
+    if (json?.requiresWebAuthn && json?.options) {
+      try {
+        const authResp = await startAuthentication({
+          optionsJSON: json.options,
+        });
+
+        const verifyRes = await fetch("/api/login/webauthn/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            response: authResp,
+          }),
+        });
+
+        const verifyJson = await verifyRes.json().catch(() => null);
+
+        if (!verifyRes.ok) {
+          setServerError(verifyJson?.message ?? "Security key verification failed");
+          return;
+        }
+
+        router.replace("/admin/dashboard");
+        router.refresh();
+        return;
+      } catch {
+        setServerError("Security key verification was cancelled or failed");
+        return;
+      }
+    }
+
+    setServerError("Security key challenge was not returned");
   };
 
   return (
