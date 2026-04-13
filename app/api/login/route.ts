@@ -3,9 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { createSession, getSessionCookieName } from "@/lib/session";
 import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
+import { isAppInitialized } from "@/lib/bootstrap";
 
 export async function POST(req: Request) {
   try {
+    const initialized = await isAppInitialized();
+
+    if (!initialized) {
+      return NextResponse.json(
+        { message: "Application is not initialized yet" },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
@@ -58,6 +68,7 @@ export async function POST(req: Request) {
       const totpOk = verifyTotpCode({
         secretBase32,
         token: totp,
+        accountName: user.email,
       });
 
       if (!totpOk) {

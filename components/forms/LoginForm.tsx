@@ -32,24 +32,24 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setServerError("");
-    console.log("Submitting login form", data);
 
     const res = await fetch("/api/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(data),
     });
 
     const json = await res.json().catch(() => null);
-    console.log("Login response", res.status, json);
 
-    if (res.ok) {
-      router.replace("/admin/dashboard");
-      router.refresh();
+    if (!res.ok) {
+      setServerError(json?.message ?? "Login failed");
       return;
     }
 
-    setServerError(json?.message ?? "Login failed");
+    router.replace("/admin/dashboard");
+    router.refresh();
   };
 
   return (
