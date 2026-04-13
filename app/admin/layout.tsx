@@ -7,6 +7,6 @@ export default function AdminDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  useIdleLogout(5 * 60 * 1000);
+  useIdleLogout(15 * 60 * 1000);
   return <>{children}</>;
 }

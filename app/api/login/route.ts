@@ -4,6 +4,23 @@ import { verifyPassword } from "@/lib/password";
 import { createSession, getSessionCookieName } from "@/lib/session";
 import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
 import { isAppInitialized } from "@/lib/bootstrap";
+import {
+  checkLoginRateLimit,
+  clearLoginFailures,
+  recordLoginFailure,
+} from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
+
+const ACCOUNT_LOCKOUT_THRESHOLD = 5;
+const ACCOUNT_LOCKOUT_MINUTES = 15;
+
+function getRequestMeta(req: Request) {
+  const userAgent = req.headers.get("user-agent");
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+
+  return { ipAddress, userAgent };
+}
 
 export async function POST(req: Request) {
   try {
@@ -21,12 +38,41 @@ export async function POST(req: Request) {
     const password = String(body.password ?? "");
     const totp = String(body.totp ?? "").trim();
 
+    const { ipAddress, userAgent } = getRequestMeta(req);
+
+    const rateLimit = await checkLoginRateLimit({ ipAddress, email });
+
+    if (rateLimit.blocked) {
+      await createAuditLog({
+        action: "LOGIN_RATE_LIMITED",
+        targetType: "AdminUser",
+        ipAddress,
+        userAgent,
+      });
+
+      return NextResponse.json(
+        {
+          message: `Too many login attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const user = await prisma.adminUser.findUnique({
       where: { email },
       include: { totp: true },
     });
 
     if (!user || !user.isActive) {
+      await recordLoginFailure({ ipAddress, email });
+
+      await createAuditLog({
+        action: "LOGIN_FAILED",
+        targetType: "AdminUser",
+        ipAddress,
+        userAgent,
+      });
+
       return NextResponse.json(
         { message: "Invalid credentials" },
         { status: 401 }
@@ -34,6 +80,15 @@ export async function POST(req: Request) {
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await createAuditLog({
+        actorUserId: user.id,
+        action: "LOGIN_LOCKED",
+        targetType: "AdminUser",
+        targetId: user.id,
+        ipAddress,
+        userAgent,
+      });
+
       return NextResponse.json(
         { message: "Account temporarily locked" },
         { status: 423 }
@@ -43,23 +98,72 @@ export async function POST(req: Request) {
     const passwordOk = await verifyPassword(password, user.passwordHash);
 
     if (!passwordOk) {
+      const nextFailures = user.failedLoginAttempts + 1;
+      const lockedUntil =
+        nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
+          ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
+          : null;
+
       await prisma.adminUser.update({
         where: { id: user.id },
         data: {
-          failedLoginAttempts: { increment: 1 },
+          failedLoginAttempts: nextFailures,
+          lockedUntil,
         },
       });
 
+      await recordLoginFailure({ ipAddress, email });
+
+      await createAuditLog({
+        actorUserId: user.id,
+        action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
+        targetType: "AdminUser",
+        targetId: user.id,
+        ipAddress,
+        userAgent,
+      });
+
       return NextResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401 }
+        {
+          message: lockedUntil
+            ? "Account temporarily locked"
+            : "Invalid credentials",
+        },
+        { status: lockedUntil ? 423 : 401 }
       );
     }
 
     if (user.totp?.isEnabled) {
       if (!/^\d{6}$/.test(totp)) {
+        await recordLoginFailure({ ipAddress, email });
+
+        const nextFailures = user.failedLoginAttempts + 1;
+        const lockedUntil =
+          nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
+            ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
+            : null;
+
+        await prisma.adminUser.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: nextFailures,
+            lockedUntil,
+          },
+        });
+
+        await createAuditLog({
+          actorUserId: user.id,
+          action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
+          targetType: "AdminUser",
+          targetId: user.id,
+          ipAddress,
+          userAgent,
+        });
+
         return NextResponse.json(
-          { message: "TOTP code is required" },
+          {
+            message: "TOTP code is required",
+          },
           { status: 401 }
         );
       }
@@ -72,9 +176,38 @@ export async function POST(req: Request) {
       });
 
       if (!totpOk) {
+        await recordLoginFailure({ ipAddress, email });
+
+        const nextFailures = user.failedLoginAttempts + 1;
+        const lockedUntil =
+          nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
+            ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
+            : null;
+
+        await prisma.adminUser.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: nextFailures,
+            lockedUntil,
+          },
+        });
+
+        await createAuditLog({
+          actorUserId: user.id,
+          action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
+          targetType: "AdminUser",
+          targetId: user.id,
+          ipAddress,
+          userAgent,
+        });
+
         return NextResponse.json(
-          { message: "Invalid TOTP code" },
-          { status: 401 }
+          {
+            message: lockedUntil
+              ? "Account temporarily locked"
+              : "Invalid TOTP code",
+          },
+          { status: lockedUntil ? 423 : 401 }
         );
       }
     }
@@ -87,15 +220,23 @@ export async function POST(req: Request) {
       },
     });
 
-    const userAgent = req.headers.get("user-agent");
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+    await clearLoginFailures({ ipAddress, email });
 
     const { token, expiresAt } = await createSession({
       userId: user.id,
       userAgent,
       ipAddress,
-      ttlSeconds: 60 * 30,
+      idleTtlSeconds: 15 * 60,
+      absoluteTtlSeconds: 8 * 60 * 60,
+    });
+
+    await createAuditLog({
+      actorUserId: user.id,
+      action: "LOGIN_SUCCESS",
+      targetType: "AdminUser",
+      targetId: user.id,
+      ipAddress,
+      userAgent,
     });
 
     const res = NextResponse.json({ message: "Logged in" });

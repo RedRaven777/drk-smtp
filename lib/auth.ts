@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionByToken, getSessionCookieName } from "@/lib/session";
@@ -13,10 +15,6 @@ export async function getCurrentAdminUser() {
   const session = await getSessionByToken(token);
 
   if (!session) {
-    return null;
-  }
-
-  if (session.expiresAt <= new Date()) {
     return null;
   }
 

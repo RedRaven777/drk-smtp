@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import {
   getAllSmtpConfigsForAdmin,
   saveSmtpConfigSecure,
   SmtpConfigValidationError,
 } from "@/lib/smtp-config";
 import { smtpConfigSaveSchema } from "@/lib/smtp-config-schema";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -29,7 +29,9 @@ export async function POST(req: Request) {
     const parsed = smtpConfigSaveSchema.safeParse({
       ...body,
       smtpPort:
-        body?.smtpPort === "" || body?.smtpPort === undefined || body?.smtpPort === null
+        body?.smtpPort === "" ||
+        body?.smtpPort === undefined ||
+        body?.smtpPort === null
           ? NaN
           : Number(body.smtpPort),
     });
@@ -58,13 +60,17 @@ export async function POST(req: Request) {
       updatedByUserId: user.id,
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: user.id,
-        action: "SMTP_CONFIG_UPDATED",
-        targetType: "SmtpConfig",
-        targetId: saved.id,
-      },
+    const userAgent = req.headers.get("user-agent");
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+
+    await createAuditLog({
+      actorUserId: user.id,
+      action: "SMTP_CONFIG_UPDATED",
+      targetType: "SmtpConfig",
+      targetId: saved.id,
+      ipAddress,
+      userAgent,
     });
 
     return NextResponse.json({

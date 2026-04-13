@@ -42,3 +42,8 @@ export type SmtpConfig = Prisma.SmtpConfigModel
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
+/**
+ * Model LoginThrottle
+ * 
+ */
+export type LoginThrottle = Prisma.LoginThrottleModel

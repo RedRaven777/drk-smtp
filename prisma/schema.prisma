@@ -47,6 +47,7 @@ model AdminSession {
   userId           String
   sessionTokenHash String    @unique
   expiresAt        DateTime
+  absoluteExpiresAt DateTime
   lastSeenAt       DateTime  @default(now())
   ipAddress        String?
   userAgent        String?
@@ -56,6 +57,7 @@ model AdminSession {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([absoluteExpiresAt])
 }
 
 model SmtpConfig {
@@ -80,10 +82,25 @@ model AuditLog {
   targetType  String
   targetId    String?
   ipAddress   String?
+  userAgent   String?
   createdAt   DateTime   @default(now())
 
   actorUser   AdminUser? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([actorUserId])
   @@index([createdAt])
+  @@index([action])
+}
+
+model LoginThrottle {
+  id            String   @id @default(cuid())
+  scope         String   @unique
+  count         Int      @default(0)
+  firstAttemptAt DateTime @default(now())
+  lastAttemptAt DateTime @default(now())
+  blockedUntil  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([blockedUntil])
 }

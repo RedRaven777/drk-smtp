@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-export default function useIdleLogout(timeout = 5 * 60 * 1000) {
+export default function useIdleLogout(timeout = 15 * 60 * 1000) {
   const router = useRouter();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef(Date.now());
@@ -41,17 +41,30 @@ export default function useIdleLogout(timeout = 5 * 60 * 1000) {
 
     resetTimer();
 
-    const refreshInterval = setInterval(() => {
+    const refreshInterval = setInterval(async () => {
       const activeRecently = Date.now() - lastActivityRef.current < timeout;
-      if (activeRecently) {
-        void fetch("/api/refresh-session", { method: "POST" });
+
+      if (!activeRecently) {
+        return;
+      }
+
+      const res = await fetch("/api/refresh-session", { method: "POST" });
+
+      if (!res.ok) {
+        await logout();
       }
     }, 60_000);
 
     return () => {
-      events.forEach((event) => window.removeEventListener(event, resetTimer));
-      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach((event) =>
+        window.removeEventListener(event, resetTimer)
+      );
+
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
       clearInterval(refreshInterval);
     };
-  }, [timeout]);
+  }, [timeout, router]);
 }

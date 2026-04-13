@@ -55,7 +55,8 @@ export const ModelName = {
   AdminTotp: 'AdminTotp',
   AdminSession: 'AdminSession',
   SmtpConfig: 'SmtpConfig',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  LoginThrottle: 'LoginThrottle'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -105,6 +106,7 @@ export const AdminSessionScalarFieldEnum = {
   userId: 'userId',
   sessionTokenHash: 'sessionTokenHash',
   expiresAt: 'expiresAt',
+  absoluteExpiresAt: 'absoluteExpiresAt',
   lastSeenAt: 'lastSeenAt',
   ipAddress: 'ipAddress',
   userAgent: 'userAgent',
@@ -137,10 +139,25 @@ export const AuditLogScalarFieldEnum = {
   targetType: 'targetType',
   targetId: 'targetId',
   ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
   createdAt: 'createdAt'
 } as const
 
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+export const LoginThrottleScalarFieldEnum = {
+  id: 'id',
+  scope: 'scope',
+  count: 'count',
+  firstAttemptAt: 'firstAttemptAt',
+  lastAttemptAt: 'lastAttemptAt',
+  blockedUntil: 'blockedUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LoginThrottleScalarFieldEnum = (typeof LoginThrottleScalarFieldEnum)[keyof typeof LoginThrottleScalarFieldEnum]
 
 
 export const SortOrder = {
