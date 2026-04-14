@@ -2,10 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/dashboard/layout/DashboardLayout";
+import AdminShell from "@/components/dashboard/layout/AdminShell";
 import SmtpSettingsForm from "@/components/dashboard/forms/SmtpSettingsForm";
-import TotpSetupForm from "@/components/dashboard/forms/TotpSetupForm";
-import WebAuthnManagementForm from "@/components/dashboard/forms/WebAuthnManagementForm";
 import {
   SMTP_CONFIG_KEYS,
   initialSmtpForm,
@@ -14,16 +12,7 @@ import {
 } from "@/types/dashboard";
 
 type Props = {
-  isTotpEnabled: boolean;
-  adminEmail: string;
   smtpConfigs: AdminSmtpConfigDto[];
-  webauthnCredentials: {
-    id: string;
-    name: string | null;
-    createdAt: string;
-    lastUsedAt: string | null;
-  }[];
-  minimumSecurityKeys: number;
 };
 
 type SaveState = {
@@ -38,13 +27,7 @@ const initialSaveState: SaveState = {
   error: "",
 };
 
-export default function DashboardClient({
-  isTotpEnabled,
-  adminEmail,
-  smtpConfigs,
-  webauthnCredentials,
-  minimumSecurityKeys,
-}: Props) {
+export default function DashboardClient({ smtpConfigs }: Props) {
   const router = useRouter();
 
   const configMap = useMemo(() => {
@@ -212,14 +195,7 @@ export default function DashboardClient({
   };
 
   return (
-    <DashboardLayout onLogout={handleLogout}>
-      <TotpSetupForm isTotpEnabled={isTotpEnabled} adminEmail={adminEmail} />
-
-      <WebAuthnManagementForm
-        initialCredentials={webauthnCredentials}
-        minimumKeys={minimumSecurityKeys}
-      />
-
+    <AdminShell onLogout={handleLogout}>
       <SmtpSettingsForm
         title="Career SMTP"
         values={careerSmtp}
@@ -272,6 +248,6 @@ export default function DashboardClient({
         message={contactsPopupSave.message}
         error={contactsPopupSave.error}
       />
-    </DashboardLayout>
+    </AdminShell>
   );
 }
