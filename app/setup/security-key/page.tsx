@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/auth";
-import {
-  countAdminSecurityKeys,
-  doesAdminHaveMinimumSecurityKeys,
-} from "@/lib/bootstrap";
+import { countAdminSecurityKeys } from "@/lib/bootstrap";
 import { prisma } from "@/lib/prisma";
 import SetupSecurityKeyForm from "@/components/forms/SetupSecurityKeyForm";
 
@@ -12,8 +9,7 @@ const REQUIRED_SECURITY_KEYS = 2;
 export default async function SetupSecurityKeyPage() {
   const user = await requireAdminUser();
 
-  const [hasEnoughKeys, keyCount, credentials] = await Promise.all([
-    doesAdminHaveMinimumSecurityKeys(user.id, REQUIRED_SECURITY_KEYS),
+  const [keyCount, credentials] = await Promise.all([
     countAdminSecurityKeys(user.id),
     prisma.adminWebAuthnCredential.findMany({
       where: { userId: user.id },
@@ -26,7 +22,7 @@ export default async function SetupSecurityKeyPage() {
     }),
   ]);
 
-  if (hasEnoughKeys) {
+  if (keyCount >= REQUIRED_SECURITY_KEYS) {
     redirect("/admin/dashboard");
   }
 

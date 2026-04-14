@@ -217,9 +217,9 @@ export async function POST(req: Request) {
       }
     }
 
-    if (user.webauthnCredentials.length < 2) {
+    if (user.webauthnCredentials.length < 1) {
       return NextResponse.json(
-        { message: "At least 2 security keys are required" },
+        { message: "At least 1 security key is required" },
         { status: 403 }
       );
     }
