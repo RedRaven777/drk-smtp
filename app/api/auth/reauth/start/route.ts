@@ -7,6 +7,7 @@ import { createWebAuthnAuthenticationOptions } from "@/lib/webauthn";
 import {
   PENDING_SENSITIVE_ACTION_COOKIE,
   serializePendingSensitiveAction,
+  isSensitiveActionPurpose,
 } from "@/lib/sensitive-action";
 import { createAuditLog } from "@/lib/audit";
 
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     const totp = String(body?.totp ?? "").trim();
     const purpose = String(body?.purpose ?? "").trim();
 
-    if (purpose !== "webauthn_management") {
+    if (!isSensitiveActionPurpose(purpose)) {
       return NextResponse.json(
         { message: "Invalid re-auth purpose" },
         { status: 400 }
@@ -35,10 +36,7 @@ export async function POST(req: Request) {
     });
 
     if (!dbUser || !dbUser.isActive) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const passwordOk = await verifyPassword(password, dbUser.passwordHash);
@@ -116,7 +114,7 @@ export async function POST(req: Request) {
       name: PENDING_SENSITIVE_ACTION_COOKIE,
       value: serializePendingSensitiveAction({
         userId: dbUser.id,
-        purpose: "webauthn_management",
+        purpose,
       }),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

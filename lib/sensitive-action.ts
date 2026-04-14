@@ -10,16 +10,32 @@ export const VERIFIED_SENSITIVE_ACTION_COOKIE =
 
 const VERIFIED_SENSITIVE_ACTION_TTL_SECONDS = 5 * 60;
 
+export const SENSITIVE_ACTION_PURPOSES = [
+  "webauthn_management",
+  "account_management",
+  "totp_management",
+  "smtp_secret_management",
+] as const;
+
+export type SensitiveActionPurpose =
+  (typeof SENSITIVE_ACTION_PURPOSES)[number];
+
 export type PendingSensitiveActionPayload = {
   userId: string;
-  purpose: "webauthn_management";
+  purpose: SensitiveActionPurpose;
 };
 
 export type VerifiedSensitiveActionPayload = {
   userId: string;
-  purpose: "webauthn_management";
+  purpose: SensitiveActionPurpose;
   verifiedAt: number;
 };
+
+export function isSensitiveActionPurpose(
+  value: string
+): value is SensitiveActionPurpose {
+  return (SENSITIVE_ACTION_PURPOSES as readonly string[]).includes(value);
+}
 
 export function serializePendingSensitiveAction(
   payload: PendingSensitiveActionPayload
@@ -36,7 +52,7 @@ export function parsePendingSensitiveAction(
   if (
     !parsed ||
     typeof parsed.userId !== "string" ||
-    parsed.purpose !== "webauthn_management"
+    !isSensitiveActionPurpose(parsed.purpose)
   ) {
     throw new Error("Invalid pending sensitive action payload");
   }
@@ -59,7 +75,7 @@ export function parseVerifiedSensitiveAction(
   if (
     !parsed ||
     typeof parsed.userId !== "string" ||
-    parsed.purpose !== "webauthn_management" ||
+    !isSensitiveActionPurpose(parsed.purpose) ||
     typeof parsed.verifiedAt !== "number"
   ) {
     throw new Error("Invalid verified sensitive action payload");
@@ -70,7 +86,7 @@ export function parseVerifiedSensitiveAction(
 
 export async function requireRecentSensitiveAction(params: {
   userId: string;
-  purpose: "webauthn_management";
+  purpose: SensitiveActionPurpose;
 }) {
   const cookieStore = await cookies();
   const raw = cookieStore.get(VERIFIED_SENSITIVE_ACTION_COOKIE)?.value;

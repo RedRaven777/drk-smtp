@@ -17,12 +17,22 @@ import TotpField from "@/components/forms/fields/TotpField";
 
 type Props = {
   open: boolean;
+  purpose:
+    | "webauthn_management"
+    | "account_management"
+    | "totp_management"
+    | "smtp_secret_management";
+  title?: string;
+  description?: string;
   onClose: () => void;
   onVerified: () => Promise<void> | void;
 };
 
 export default function SensitiveActionReauthDialog({
   open,
+  purpose,
+  title = "Confirm sensitive action",
+  description = "To continue, enter your password, TOTP code, and confirm with a registered security key.",
   onClose,
   onVerified,
 }: Props) {
@@ -57,7 +67,7 @@ export default function SensitiveActionReauthDialog({
         body: JSON.stringify({
           password,
           totp,
-          purpose: "webauthn_management",
+          purpose,
         }),
       });
 
@@ -102,7 +112,7 @@ export default function SensitiveActionReauthDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Confirm sensitive action</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
 
       <DialogContent>
         <Stack spacing={2} mt={1}>
@@ -111,10 +121,7 @@ export default function SensitiveActionReauthDialog({
 
           {error ? <Alert severity="error">{error}</Alert> : null}
 
-          <Box>
-            To continue, enter your password, TOTP code, and confirm with a registered
-            security key.
-          </Box>
+          <Box>{description}</Box>
         </Stack>
       </DialogContent>
 
