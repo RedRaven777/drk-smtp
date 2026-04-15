@@ -24,6 +24,7 @@ type Props = {
     | "smtp_secret_management";
   title?: string;
   description?: string;
+  totpRequired?: boolean;
   onClose: () => void;
   onVerified: () => Promise<void> | void;
 };
@@ -33,6 +34,7 @@ export default function SensitiveActionReauthDialog({
   purpose,
   title = "Confirm sensitive action",
   description = "To continue, enter your password, TOTP code, and confirm with a registered security key.",
+  totpRequired = true,
   onClose,
   onVerified,
 }: Props) {
@@ -56,6 +58,17 @@ export default function SensitiveActionReauthDialog({
 
   const handleVerify = async () => {
     setError("");
+
+    if (!password.trim()) {
+      setError("Password is required");
+      return;
+    }
+
+    if (totpRequired && !/^\d{6}$/.test(totp)) {
+      setError("Valid 6-digit TOTP code is required");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -117,7 +130,10 @@ export default function SensitiveActionReauthDialog({
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <PasswordField value={password} onChange={setPassword} />
-          <TotpField value={totp} onChange={setTotp} />
+
+          {totpRequired ? (
+            <TotpField value={totp} onChange={setTotp} />
+          ) : null}
 
           {error ? <Alert severity="error">{error}</Alert> : null}
 

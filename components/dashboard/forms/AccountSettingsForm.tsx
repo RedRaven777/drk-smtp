@@ -16,6 +16,7 @@ import SensitiveActionReauthDialog from "./SensitiveActionReauthDialog";
 
 type Props = {
   currentEmail: string;
+  totpEnabled: boolean;
 };
 
 type PendingAction =
@@ -23,7 +24,10 @@ type PendingAction =
   | { type: "change_password" }
   | null;
 
-export default function AccountSettingsForm({ currentEmail }: Props) {
+export default function AccountSettingsForm({
+  currentEmail,
+  totpEnabled,
+}: Props) {
   const router = useRouter();
 
   const [newEmail, setNewEmail] = useState("");
@@ -37,6 +41,11 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const openReauth = (action: PendingAction) => {
+    if (!totpEnabled) {
+      setError("Enable TOTP first before changing email or password");
+      return;
+    }
+
     setMessage("");
     setError("");
     setPendingAction(action);
@@ -125,6 +134,12 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
       <Divider sx={{ mb: 3 }} />
 
       <Stack spacing={3}>
+        {!totpEnabled ? (
+          <Alert severity="warning">
+            TOTP must be enabled before you can change email or password.
+          </Alert>
+        ) : null}
+
         <Box>
           <Typography variant="subtitle1" fontWeight={700} mb={1}>
             Change email
@@ -141,12 +156,14 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               fullWidth
+              disabled={!totpEnabled}
             />
 
             <Box>
               <Button
                 variant="contained"
                 onClick={() => openReauth({ type: "change_email" })}
+                disabled={!totpEnabled}
               >
                 Update email
               </Button>
@@ -168,6 +185,7 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               fullWidth
+              disabled={!totpEnabled}
             />
 
             <TextField
@@ -176,12 +194,14 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               fullWidth
+              disabled={!totpEnabled}
             />
 
             <Box>
               <Button
                 variant="contained"
                 onClick={() => openReauth({ type: "change_password" })}
+                disabled={!totpEnabled}
               >
                 Update password
               </Button>
@@ -197,7 +217,8 @@ export default function AccountSettingsForm({ currentEmail }: Props) {
         open={reauthOpen}
         purpose="account_management"
         title="Confirm account change"
-        description="To change your email or password, enter your password, TOTP code, and confirm with a registered security key."
+        description="To change your email or password, enter your password, current TOTP code, and confirm with a registered security key."
+        totpRequired
         onClose={() => {
           setReauthOpen(false);
           setPendingAction(null);

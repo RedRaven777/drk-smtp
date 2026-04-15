@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/dashboard/layout/AdminShell";
-import TotpSetupForm from "@/components/dashboard/forms/TotpSetupForm";
 import WebAuthnManagementForm from "@/components/dashboard/forms/WebAuthnManagementForm";
 import AccountSettingsForm from "@/components/dashboard/forms/AccountSettingsForm";
+import TotpManagementForm from "@/components/dashboard/forms/TotpManagementForm";
 
 type Props = {
   isTotpEnabled: boolean;
@@ -34,13 +34,20 @@ export default function SecurityClient({
 
   return (
     <AdminShell onLogout={handleLogout}>
-      <AccountSettingsForm currentEmail={adminEmail} />
+      <AccountSettingsForm
+        currentEmail={adminEmail}
+        totpEnabled={isTotpEnabled}
+      />
 
-      <TotpSetupForm isTotpEnabled={isTotpEnabled} adminEmail={adminEmail} />
+      <TotpManagementForm
+        isTotpEnabled={isTotpEnabled}
+        adminEmail={adminEmail}
+      />
 
       <WebAuthnManagementForm
         initialCredentials={webauthnCredentials}
         minimumKeys={minimumSecurityKeys}
+        totpEnabled={isTotpEnabled}
       />
     </AdminShell>
   );

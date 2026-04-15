@@ -18,7 +18,11 @@ import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
 import TotpField from "./fields/TotpField";
 
-export default function LoginForm() {
+type Props = {
+  isTotpEnabled: boolean;
+};
+
+export default function LoginForm({ isTotpEnabled }: Props) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
 
@@ -34,12 +38,18 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setServerError("");
 
+    const payload = {
+      email: data.email,
+      password: data.password,
+      totp: isTotpEnabled ? data.totp : "",
+    };
+
     const res = await fetch("/api/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json().catch(() => null);
@@ -68,7 +78,9 @@ export default function LoginForm() {
         const verifyJson = await verifyRes.json().catch(() => null);
 
         if (!verifyRes.ok) {
-          setServerError(verifyJson?.message ?? "Security key verification failed");
+          setServerError(
+            verifyJson?.message ?? "Security key verification failed"
+          );
           return;
         }
 
@@ -125,15 +137,19 @@ export default function LoginForm() {
           </Typography>
         ) : null}
 
-        <Controller
-          name="totp"
-          control={control}
-          render={({ field }) => <TotpField {...field} />}
-        />
-        {errors.totp ? (
-          <Typography variant="body2" color="error">
-            {errors.totp.message}
-          </Typography>
+        {isTotpEnabled ? (
+          <>
+            <Controller
+              name="totp"
+              control={control}
+              render={({ field }) => <TotpField {...field} />}
+            />
+            {errors.totp ? (
+              <Typography variant="body2" color="error">
+                {errors.totp.message}
+              </Typography>
+            ) : null}
+          </>
         ) : null}
 
         <Button

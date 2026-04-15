@@ -27,6 +27,7 @@ type CredentialItem = {
 type Props = {
   initialCredentials: CredentialItem[];
   minimumKeys: number;
+  totpEnabled: boolean;
 };
 
 type PendingAction =
@@ -38,6 +39,7 @@ type PendingAction =
 export default function WebAuthnManagementForm({
   initialCredentials,
   minimumKeys,
+  totpEnabled,
 }: Props) {
   const [credentials, setCredentials] =
     useState<CredentialItem[]>(initialCredentials);
@@ -200,6 +202,11 @@ export default function WebAuthnManagementForm({
   };
 
   const openReauthFor = (action: PendingAction) => {
+    if (!totpEnabled) {
+      setError("Enable TOTP first before managing security keys");
+      return;
+    }
+
     setPendingAction(action);
     setReauthOpen(true);
   };
@@ -231,10 +238,16 @@ export default function WebAuthnManagementForm({
       <Divider sx={{ mb: 3 }} />
 
       <Stack spacing={2}>
-        <Alert severity={credentials.length >= minimumKeys ? "success" : "warning"}>
-          Registered keys: <strong>{credentials.length}</strong>. Minimum required:{" "}
-          <strong>{minimumKeys}</strong>.
-        </Alert>
+        {!totpEnabled ? (
+          <Alert severity="warning">
+            TOTP must be enabled before you can add, rename, or remove security keys.
+          </Alert>
+        ) : (
+          <Alert severity={credentials.length >= minimumKeys ? "success" : "warning"}>
+            Registered keys: <strong>{credentials.length}</strong>. Minimum required:{" "}
+            <strong>{minimumKeys}</strong>.
+          </Alert>
+        )}
 
         <Typography variant="body2">
           To add, rename, or remove a key, you must re-enter your password, TOTP,
@@ -247,13 +260,14 @@ export default function WebAuthnManagementForm({
           value={keyName}
           onChange={(e) => setKeyName(e.target.value)}
           fullWidth
+          disabled={!totpEnabled}
         />
 
         <Box>
           <Button
             variant="contained"
             onClick={() => openReauthFor({ type: "register" })}
-            disabled={isRegistering}
+            disabled={isRegistering || !totpEnabled}
           >
             {isRegistering ? "Registering..." : "Register New Security Key"}
           </Button>
@@ -310,6 +324,7 @@ export default function WebAuthnManagementForm({
                         }))
                       }
                       fullWidth
+                      disabled={!totpEnabled}
                     />
 
                     <Box display="flex" gap={1} flexWrap="wrap">
@@ -321,7 +336,7 @@ export default function WebAuthnManagementForm({
                             credentialId: credential.id,
                           })
                         }
-                        disabled={busyCredentialId === credential.id}
+                        disabled={busyCredentialId === credential.id || !totpEnabled}
                       >
                         Rename
                       </Button>
@@ -335,7 +350,7 @@ export default function WebAuthnManagementForm({
                             credentialId: credential.id,
                           })
                         }
-                        disabled={busyCredentialId === credential.id}
+                        disabled={busyCredentialId === credential.id || !totpEnabled}
                       >
                         Remove
                       </Button>
@@ -350,6 +365,10 @@ export default function WebAuthnManagementForm({
 
       <SensitiveActionReauthDialog
         open={reauthOpen}
+        purpose="webauthn_management"
+        title="Confirm security key change"
+        description="To manage security keys, enter your password, current TOTP code, and confirm with a working registered security key."
+        totpRequired
         onClose={() => {
           setReauthOpen(false);
           setPendingAction(null);

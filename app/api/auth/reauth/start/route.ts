@@ -57,41 +57,46 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!dbUser.totp?.isEnabled) {
+    const isTotpEnabled = Boolean(dbUser.totp?.isEnabled);
+
+    // Без TOTP дозволяємо тільки повторне увімкнення TOTP
+    if (!isTotpEnabled && purpose !== "totp_management") {
       return NextResponse.json(
-        { message: "TOTP is not enabled" },
-        { status: 401 }
+        { message: "TOTP must be enabled before managing this section" },
+        { status: 403 }
       );
     }
 
-    if (!/^\d{6}$/.test(totp)) {
-      return NextResponse.json(
-        { message: "Valid TOTP code is required" },
-        { status: 401 }
-      );
-    }
+    if (isTotpEnabled) {
+      if (!/^\d{6}$/.test(totp)) {
+        return NextResponse.json(
+          { message: "Valid TOTP code is required" },
+          { status: 401 }
+        );
+      }
 
-    const secretBase32 = decryptTotpSecret(dbUser.totp.secretEncrypted);
-    const totpOk = verifyTotpCode({
-      secretBase32,
-      token: totp,
-      accountName: dbUser.email,
-    });
-
-    if (!totpOk) {
-      await createAuditLog({
-        actorUserId: dbUser.id,
-        action: "SENSITIVE_REAUTH_FAILED",
-        targetType: "AdminUser",
-        targetId: dbUser.id,
-        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-        userAgent: req.headers.get("user-agent"),
+      const secretBase32 = decryptTotpSecret(dbUser.totp!.secretEncrypted);
+      const totpOk = verifyTotpCode({
+        secretBase32,
+        token: totp,
+        accountName: dbUser.email,
       });
 
-      return NextResponse.json(
-        { message: "Invalid TOTP code" },
-        { status: 401 }
-      );
+      if (!totpOk) {
+        await createAuditLog({
+          actorUserId: dbUser.id,
+          action: "SENSITIVE_REAUTH_FAILED",
+          targetType: "AdminUser",
+          targetId: dbUser.id,
+          ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+          userAgent: req.headers.get("user-agent"),
+        });
+
+        return NextResponse.json(
+          { message: "Invalid TOTP code" },
+          { status: 401 }
+        );
+      }
     }
 
     if (dbUser.webauthnCredentials.length === 0) {
