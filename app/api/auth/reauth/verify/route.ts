@@ -43,7 +43,9 @@ export async function POST(req: Request) {
 
     await createAuditLog({
       actorUserId: pending.userId,
-      action: "SENSITIVE_REAUTH_SUCCESS",
+      action: pending.purpose === "admin_unlock"
+        ? "ADMIN_UNLOCK_SUCCESS"
+        : "SENSITIVE_REAUTH_SUCCESS",
       targetType: "AdminUser",
       targetId: pending.userId,
       ipAddress,
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
     });
 
     const res = NextResponse.json({
-      message: "Sensitive re-auth verified",
+      message: "Verification successful",
     });
 
     res.cookies.set({
@@ -82,7 +84,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("SENSITIVE REAUTH VERIFY ERROR:", error);
     return NextResponse.json(
-      { message: "Failed to verify sensitive re-auth" },
+      { message: "Failed to verify security key" },
       { status: 400 }
     );
   }

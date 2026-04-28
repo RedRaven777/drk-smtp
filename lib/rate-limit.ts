@@ -2,11 +2,14 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 
-const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_RATE_LIMIT_BLOCK_MS = 15 * 60 * 1000;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_BLOCK_MS = 15 * 60 * 1000;
 
 const MAX_LOGIN_FAILURES_PER_IP = 10;
 const MAX_LOGIN_FAILURES_PER_EMAIL = 5;
+
+const MAX_UNLOCK_FAILURES_PER_IP = 10;
+const MAX_UNLOCK_FAILURES_PER_USER = 5;
 
 type RateLimitCheckResult = {
   blocked: boolean;
@@ -15,21 +18,34 @@ type RateLimitCheckResult = {
 };
 
 function normalizeIp(ipAddress?: string | null) {
-  return (ipAddress ?? "").trim();
+  const value = (ipAddress ?? "").trim();
+  return value || "local";
 }
 
 function normalizeEmail(email?: string | null) {
   return (email ?? "").trim().toLowerCase();
 }
 
-function makeIpScope(ipAddress?: string | null) {
-  const normalized = normalizeIp(ipAddress);
-  return normalized ? `login:ip:${normalized}` : null;
+function normalizeUserId(userId?: string | null) {
+  return (userId ?? "").trim();
 }
 
-function makeEmailScope(email?: string | null) {
+function makeLoginIpScope(ipAddress?: string | null) {
+  return `login:ip:${normalizeIp(ipAddress)}`;
+}
+
+function makeLoginEmailScope(email?: string | null) {
   const normalized = normalizeEmail(email);
   return normalized ? `login:email:${normalized}` : null;
+}
+
+function makeUnlockIpScope(ipAddress?: string | null) {
+  return `unlock:ip:${normalizeIp(ipAddress)}`;
+}
+
+function makeUnlockUserScope(userId?: string | null) {
+  const normalized = normalizeUserId(userId);
+  return normalized ? `unlock:user:${normalized}` : null;
 }
 
 async function checkScope(scope: string | null): Promise<RateLimitCheckResult> {
@@ -59,12 +75,24 @@ async function checkScope(scope: string | null): Promise<RateLimitCheckResult> {
   };
 }
 
+async function checkScopes(scopes: Array<string | null>): Promise<RateLimitCheckResult> {
+  for (const scope of scopes) {
+    const result = await checkScope(scope);
+    if (result.blocked) {
+      return result;
+    }
+  }
+
+  return { blocked: false, retryAfterSeconds: 0 };
+}
+
 async function recordFailureForScope(scope: string | null, maxFailures: number) {
   if (!scope) {
     return;
   }
 
   const now = new Date();
+
   const row = await prisma.loginThrottle.findUnique({
     where: { scope },
   });
@@ -89,7 +117,7 @@ async function recordFailureForScope(scope: string | null, maxFailures: number) 
     return;
   }
 
-  const isNewWindow = nowMs - firstAttemptMs > LOGIN_RATE_LIMIT_WINDOW_MS;
+  const isNewWindow = nowMs - firstAttemptMs > RATE_LIMIT_WINDOW_MS;
 
   if (isNewWindow) {
     await prisma.loginThrottle.update({
@@ -113,10 +141,18 @@ async function recordFailureForScope(scope: string | null, maxFailures: number) 
       count: nextCount,
       lastAttemptAt: now,
       blockedUntil: shouldBlock
-        ? new Date(nowMs + LOGIN_RATE_LIMIT_BLOCK_MS)
+        ? new Date(nowMs + RATE_LIMIT_BLOCK_MS)
         : null,
     },
   });
+}
+
+async function recordFailuresForScopes(
+  scopes: Array<{ scope: string | null; maxFailures: number }>
+) {
+  await Promise.all(
+    scopes.map((item) => recordFailureForScope(item.scope, item.maxFailures))
+  );
 }
 
 async function clearScope(scope: string | null) {
@@ -129,30 +165,33 @@ async function clearScope(scope: string | null) {
   });
 }
 
+async function clearScopes(scopes: Array<string | null>) {
+  await Promise.all(scopes.map((scope) => clearScope(scope)));
+}
+
 export async function checkLoginRateLimit(params: {
   ipAddress?: string | null;
   email?: string | null;
 }): Promise<RateLimitCheckResult> {
-  const ipResult = await checkScope(makeIpScope(params.ipAddress));
-  if (ipResult.blocked) {
-    return ipResult;
-  }
-
-  const emailResult = await checkScope(makeEmailScope(params.email));
-  if (emailResult.blocked) {
-    return emailResult;
-  }
-
-  return { blocked: false, retryAfterSeconds: 0 };
+  return checkScopes([
+    makeLoginIpScope(params.ipAddress),
+    makeLoginEmailScope(params.email),
+  ]);
 }
 
 export async function recordLoginFailure(params: {
   ipAddress?: string | null;
   email?: string | null;
 }) {
-  await Promise.all([
-    recordFailureForScope(makeIpScope(params.ipAddress), MAX_LOGIN_FAILURES_PER_IP),
-    recordFailureForScope(makeEmailScope(params.email), MAX_LOGIN_FAILURES_PER_EMAIL),
+  await recordFailuresForScopes([
+    {
+      scope: makeLoginIpScope(params.ipAddress),
+      maxFailures: MAX_LOGIN_FAILURES_PER_IP,
+    },
+    {
+      scope: makeLoginEmailScope(params.email),
+      maxFailures: MAX_LOGIN_FAILURES_PER_EMAIL,
+    },
   ]);
 }
 
@@ -160,8 +199,44 @@ export async function clearLoginFailures(params: {
   ipAddress?: string | null;
   email?: string | null;
 }) {
-  await Promise.all([
-    clearScope(makeIpScope(params.ipAddress)),
-    clearScope(makeEmailScope(params.email)),
+  await clearScopes([
+    makeLoginIpScope(params.ipAddress),
+    makeLoginEmailScope(params.email),
+  ]);
+}
+
+export async function checkUnlockRateLimit(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+}): Promise<RateLimitCheckResult> {
+  return checkScopes([
+    makeUnlockIpScope(params.ipAddress),
+    makeUnlockUserScope(params.userId),
+  ]);
+}
+
+export async function recordUnlockFailure(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+}) {
+  await recordFailuresForScopes([
+    {
+      scope: makeUnlockIpScope(params.ipAddress),
+      maxFailures: MAX_UNLOCK_FAILURES_PER_IP,
+    },
+    {
+      scope: makeUnlockUserScope(params.userId),
+      maxFailures: MAX_UNLOCK_FAILURES_PER_USER,
+    },
+  ]);
+}
+
+export async function clearUnlockFailures(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+}) {
+  await clearScopes([
+    makeUnlockIpScope(params.ipAddress),
+    makeUnlockUserScope(params.userId),
   ]);
 }

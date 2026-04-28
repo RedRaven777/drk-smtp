@@ -7,6 +7,10 @@ import {
   PENDING_WEBAUTHN_LOGIN_COOKIE,
 } from "@/lib/pending-webauthn-login";
 import { createAuditLog } from "@/lib/audit";
+import {
+  clearUnlockFailures,
+  recordUnlockFailure,
+} from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -21,24 +25,85 @@ export async function POST(req: Request) {
     }
 
     const pending = parsePendingWebAuthnLogin(pendingCookie);
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const response = body?.response;
+    const unlockOnly = Boolean(body?.unlockOnly);
+
+    const userAgent = req.headers.get("user-agent");
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
 
     if (!response) {
+      if (unlockOnly) {
+        await recordUnlockFailure({
+          ipAddress,
+          userId: pending.userId,
+        });
+      }
+
       return NextResponse.json(
         { message: "Missing WebAuthn response" },
         { status: 400 }
       );
     }
 
-    await verifyWebAuthnAuthentication({
-      userId: pending.userId,
-      response,
+    try {
+      await verifyWebAuthnAuthentication({
+        userId: pending.userId,
+        response,
+      });
+    } catch (error) {
+      if (unlockOnly) {
+        await recordUnlockFailure({
+          ipAddress,
+          userId: pending.userId,
+        });
+
+        await createAuditLog({
+          actorUserId: pending.userId,
+          action: "ADMIN_UNLOCK_FAILED",
+          targetType: "AdminUser",
+          targetId: pending.userId,
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      throw error;
+    }
+
+    const res = NextResponse.json({
+      message: unlockOnly ? "Admin unlock verified" : "Logged in",
+      unlockOnly,
     });
 
-    const userAgent = req.headers.get("user-agent");
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+    res.cookies.set({
+      name: PENDING_WEBAUTHN_LOGIN_COOKIE,
+      value: "",
+      path: "/",
+      maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    if (unlockOnly) {
+      await clearUnlockFailures({
+        ipAddress,
+        userId: pending.userId,
+      });
+
+      await createAuditLog({
+        actorUserId: pending.userId,
+        action: "ADMIN_UNLOCK_SUCCESS",
+        targetType: "AdminUser",
+        targetId: pending.userId,
+        ipAddress,
+        userAgent,
+      });
+
+      return res;
+    }
 
     const { token, expiresAt } = await createSession({
       userId: pending.userId,
@@ -55,18 +120,6 @@ export async function POST(req: Request) {
       targetId: pending.userId,
       ipAddress,
       userAgent,
-    });
-
-    const res = NextResponse.json({ message: "Logged in" });
-
-    res.cookies.set({
-      name: PENDING_WEBAUTHN_LOGIN_COOKIE,
-      value: "",
-      path: "/",
-      maxAge: 0,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
     });
 
     res.cookies.set({

@@ -47,7 +47,8 @@ export async function POST(req: Request) {
         action: "SENSITIVE_REAUTH_FAILED",
         targetType: "AdminUser",
         targetId: dbUser.id,
-        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ipAddress:
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
         userAgent: req.headers.get("user-agent"),
       });
 
@@ -59,7 +60,6 @@ export async function POST(req: Request) {
 
     const isTotpEnabled = Boolean(dbUser.totp?.isEnabled);
 
-    // Без TOTP дозволяємо тільки повторне увімкнення TOTP
     if (!isTotpEnabled && purpose !== "totp_management") {
       return NextResponse.json(
         { message: "TOTP must be enabled before managing this section" },
@@ -88,7 +88,8 @@ export async function POST(req: Request) {
           action: "SENSITIVE_REAUTH_FAILED",
           targetType: "AdminUser",
           targetId: dbUser.id,
-          ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+          ipAddress:
+            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
           userAgent: req.headers.get("user-agent"),
         });
 

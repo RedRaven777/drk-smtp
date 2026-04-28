@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/dashboard/layout/AdminShell";
+import AdminTabGuard from "@/components/admin/AdminTabGuard";
 import WebAuthnManagementForm from "@/components/dashboard/forms/WebAuthnManagementForm";
 import AccountSettingsForm from "@/components/dashboard/forms/AccountSettingsForm";
 import TotpManagementForm from "@/components/dashboard/forms/TotpManagementForm";
@@ -33,22 +34,24 @@ export default function SecurityClient({
   };
 
   return (
-    <AdminShell onLogout={handleLogout}>
-      <AccountSettingsForm
-        currentEmail={adminEmail}
-        totpEnabled={isTotpEnabled}
-      />
+    <AdminTabGuard>
+      <AdminShell onLogout={handleLogout}>
+        <AccountSettingsForm
+          currentEmail={adminEmail}
+          totpEnabled={isTotpEnabled}
+        />
 
-      <TotpManagementForm
-        isTotpEnabled={isTotpEnabled}
-        adminEmail={adminEmail}
-      />
+        <TotpManagementForm
+          isTotpEnabled={isTotpEnabled}
+          adminEmail={adminEmail}
+        />
 
-      <WebAuthnManagementForm
-        initialCredentials={webauthnCredentials}
-        minimumKeys={minimumSecurityKeys}
-        totpEnabled={isTotpEnabled}
-      />
-    </AdminShell>
+        <WebAuthnManagementForm
+          initialCredentials={webauthnCredentials}
+          minimumKeys={minimumSecurityKeys}
+          totpEnabled={isTotpEnabled}
+        />
+      </AdminShell>
+    </AdminTabGuard>
   );
 }

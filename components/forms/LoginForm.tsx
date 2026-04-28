@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { startAuthentication } from "@simplewebauthn/browser";
 
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
+import { writeAdminTabUnlock } from "@/lib/admin-unlock";
 import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
 import TotpField from "./fields/TotpField";
@@ -83,6 +84,8 @@ export default function LoginForm({ isTotpEnabled }: Props) {
           );
           return;
         }
+
+        writeAdminTabUnlock();
 
         router.replace("/admin/dashboard");
         router.refresh();

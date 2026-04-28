@@ -14,18 +14,6 @@ export default function useIdleLogout(timeout = 15 * 60 * 1000) {
     router.refresh();
   };
 
-  const bestEffortLogoutOnClose = () => {
-    try {
-      const blob = new Blob([], { type: "application/octet-stream" });
-      navigator.sendBeacon("/api/logout/beacon", blob);
-    } catch {
-      fetch("/api/logout/beacon", {
-        method: "POST",
-        keepalive: true,
-      }).catch(() => {});
-    }
-  };
-
   const resetTimer = () => {
     lastActivityRef.current = Date.now();
 
@@ -51,8 +39,6 @@ export default function useIdleLogout(timeout = 15 * 60 * 1000) {
       window.addEventListener(event, resetTimer, { passive: true })
     );
 
-    window.addEventListener("pagehide", bestEffortLogoutOnClose);
-
     resetTimer();
 
     const refreshInterval = setInterval(async () => {
@@ -73,8 +59,6 @@ export default function useIdleLogout(timeout = 15 * 60 * 1000) {
       events.forEach((event) =>
         window.removeEventListener(event, resetTimer)
       );
-
-      window.removeEventListener("pagehide", bestEffortLogoutOnClose);
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);

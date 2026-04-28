@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/dashboard/layout/AdminShell";
+import AdminTabGuard from "@/components/admin/AdminTabGuard";
 import SmtpSettingsForm from "@/components/dashboard/forms/SmtpSettingsForm";
 import {
   SMTP_CONFIG_KEYS,
@@ -195,59 +196,61 @@ export default function DashboardClient({ smtpConfigs }: Props) {
   };
 
   return (
-    <AdminShell onLogout={handleLogout}>
-      <SmtpSettingsForm
-        title="Career SMTP"
-        values={careerSmtp}
-        onChange={setCareerSmtp}
-        onSubmit={() =>
-          saveConfig(careerSmtp, SMTP_CONFIG_KEYS.CAREER, setCareerSave, setCareerSmtp)
-        }
-        isSaving={careerSave.loading}
-        message={careerSave.message}
-        error={careerSave.error}
-      />
+    <AdminTabGuard>
+      <AdminShell onLogout={handleLogout}>
+        <SmtpSettingsForm
+          title="Career SMTP"
+          values={careerSmtp}
+          onChange={setCareerSmtp}
+          onSubmit={() =>
+            saveConfig(careerSmtp, SMTP_CONFIG_KEYS.CAREER, setCareerSave, setCareerSmtp)
+          }
+          isSaving={careerSave.loading}
+          message={careerSave.message}
+          error={careerSave.error}
+        />
 
-      <SmtpSettingsForm
-        title="Contacts SMTP"
-        values={contactsSmtp}
-        onChange={setContactsSmtp}
-        onSubmit={() =>
-          saveConfig(contactsSmtp, SMTP_CONFIG_KEYS.CONTACTS, setContactsSave, setContactsSmtp)
-        }
-        isSaving={contactsSave.loading}
-        message={contactsSave.message}
-        error={contactsSave.error}
-      />
+        <SmtpSettingsForm
+          title="Contacts SMTP"
+          values={contactsSmtp}
+          onChange={setContactsSmtp}
+          onSubmit={() =>
+            saveConfig(contactsSmtp, SMTP_CONFIG_KEYS.CONTACTS, setContactsSave, setContactsSmtp)
+          }
+          isSaving={contactsSave.loading}
+          message={contactsSave.message}
+          error={contactsSave.error}
+        />
 
-      <SmtpSettingsForm
-        title="Newrecipe SMTP"
-        values={newrecipeSmtp}
-        onChange={setNewrecipeSmtp}
-        onSubmit={() =>
-          saveConfig(newrecipeSmtp, SMTP_CONFIG_KEYS.NEWRECIPE, setNewrecipeSave, setNewrecipeSmtp)
-        }
-        isSaving={newrecipeSave.loading}
-        message={newrecipeSave.message}
-        error={newrecipeSave.error}
-      />
+        <SmtpSettingsForm
+          title="Newrecipe SMTP"
+          values={newrecipeSmtp}
+          onChange={setNewrecipeSmtp}
+          onSubmit={() =>
+            saveConfig(newrecipeSmtp, SMTP_CONFIG_KEYS.NEWRECIPE, setNewrecipeSave, setNewrecipeSmtp)
+          }
+          isSaving={newrecipeSave.loading}
+          message={newrecipeSave.message}
+          error={newrecipeSave.error}
+        />
 
-      <SmtpSettingsForm
-        title="Contacts Popup SMTP"
-        values={contactsPopupSmtp}
-        onChange={setContactsPopupSmtp}
-        onSubmit={() =>
-          saveConfig(
-            contactsPopupSmtp,
-            SMTP_CONFIG_KEYS.CONTACTS_POPUP,
-            setContactsPopupSave,
-            setContactsPopupSmtp
-          )
-        }
-        isSaving={contactsPopupSave.loading}
-        message={contactsPopupSave.message}
-        error={contactsPopupSave.error}
-      />
-    </AdminShell>
+        <SmtpSettingsForm
+          title="Contacts Popup SMTP"
+          values={contactsPopupSmtp}
+          onChange={setContactsPopupSmtp}
+          onSubmit={() =>
+            saveConfig(
+              contactsPopupSmtp,
+              SMTP_CONFIG_KEYS.CONTACTS_POPUP,
+              setContactsPopupSave,
+              setContactsPopupSmtp
+            )
+          }
+          isSaving={contactsPopupSave.loading}
+          message={contactsPopupSave.message}
+          error={contactsPopupSave.error}
+        />
+      </AdminShell>
+    </AdminTabGuard>
   );
 }
