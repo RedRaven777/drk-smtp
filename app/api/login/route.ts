@@ -17,6 +17,7 @@ import {
   serializePendingWebAuthnLogin,
 } from "@/lib/pending-webauthn-login";
 import { getCurrentAdminUser } from "@/lib/auth";
+import { withApiSecurity } from "@/lib/api-guard";
 
 const ACCOUNT_LOCKOUT_THRESHOLD = 5;
 const ACCOUNT_LOCKOUT_MINUTES = 15;
@@ -37,7 +38,7 @@ function getRequestMeta(req: Request) {
   return { ipAddress, userAgent };
 }
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   try {
     const initialized = await isAppInitialized();
 
@@ -52,6 +53,10 @@ export async function POST(req: Request) {
     const unlockOnly = Boolean(body?.unlockOnly);
 
     const { ipAddress, userAgent } = getRequestMeta(req);
+
+    // =========================
+    // 🔐 UNLOCK FLOW
+    // =========================
 
     if (unlockOnly) {
       const currentUser = await getCurrentAdminUser();
@@ -107,10 +112,7 @@ export async function POST(req: Request) {
       const passwordOk = await verifyPassword(password, user.passwordHash);
 
       if (!passwordOk) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: user.id,
-        });
+        await recordUnlockFailure({ ipAddress, userId: user.id });
 
         await createAuditLog({
           actorUserId: user.id,
@@ -128,10 +130,7 @@ export async function POST(req: Request) {
       }
 
       if (!user.totp?.isEnabled) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: user.id,
-        });
+        await recordUnlockFailure({ ipAddress, userId: user.id });
 
         return NextResponse.json(
           { message: "TOTP must be enabled" },
@@ -140,10 +139,7 @@ export async function POST(req: Request) {
       }
 
       if (!/^\d{6}$/.test(totp)) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: user.id,
-        });
+        await recordUnlockFailure({ ipAddress, userId: user.id });
 
         return NextResponse.json(
           { message: "Valid TOTP code is required" },
@@ -159,10 +155,7 @@ export async function POST(req: Request) {
       });
 
       if (!totpOk) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: user.id,
-        });
+        await recordUnlockFailure({ ipAddress, userId: user.id });
 
         await createAuditLog({
           actorUserId: user.id,
@@ -180,10 +173,31 @@ export async function POST(req: Request) {
       }
 
       if (user.webauthnCredentials.length < 1) {
-        return NextResponse.json(
-          { message: "At least 1 security key is required" },
-          { status: 403 }
-        );
+        const { token, expiresAt } = await createSession({
+          userId: user.id,
+          userAgent,
+          ipAddress,
+          idleTtlSeconds: 15 * 60,
+          absoluteTtlSeconds: 8 * 60 * 60,
+        });
+
+        const res = NextResponse.json({
+          requiresWebAuthn: false,
+          setupSecurityKeysRequired: true,
+          redirectTo: "/setup/security-key",
+        });
+
+        res.cookies.set({
+          name: getSessionCookieName(),
+          value: token,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          expires: expiresAt,
+        });
+
+        return res;
       }
 
       const options = await createWebAuthnAuthenticationOptions({
@@ -207,6 +221,10 @@ export async function POST(req: Request) {
 
       return res;
     }
+
+    // =========================
+    // 🔐 LOGIN FLOW
+    // =========================
 
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
@@ -255,15 +273,6 @@ export async function POST(req: Request) {
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      await createAuditLog({
-        actorUserId: user.id,
-        action: "LOGIN_LOCKED",
-        targetType: "AdminUser",
-        targetId: user.id,
-        ipAddress,
-        userAgent,
-      });
-
       return NextResponse.json(
         { message: "Account temporarily locked" },
         { status: 423 }
@@ -289,118 +298,12 @@ export async function POST(req: Request) {
 
       await recordLoginFailure({ ipAddress, email });
 
-      await createAuditLog({
-        actorUserId: user.id,
-        action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
-        targetType: "AdminUser",
-        targetId: user.id,
-        ipAddress,
-        userAgent,
-      });
-
       return NextResponse.json(
-        {
-          message: lockedUntil
-            ? "Account temporarily locked"
-            : "Invalid credentials",
-        },
+        { message: lockedUntil ? "Account temporarily locked" : "Invalid credentials" },
         { status: lockedUntil ? 423 : 401 }
       );
     }
 
-    if (user.totp?.isEnabled) {
-      if (!/^\d{6}$/.test(totp)) {
-        await recordLoginFailure({ ipAddress, email });
-
-        const nextFailures = user.failedLoginAttempts + 1;
-        const lockedUntil =
-          nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
-            ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
-            : null;
-
-        await prisma.adminUser.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: nextFailures,
-            lockedUntil,
-          },
-        });
-
-        await createAuditLog({
-          actorUserId: user.id,
-          action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
-          targetType: "AdminUser",
-          targetId: user.id,
-          ipAddress,
-          userAgent,
-        });
-
-        return NextResponse.json(
-          { message: "TOTP code is required" },
-          { status: 401 }
-        );
-      }
-
-      const secretBase32 = decryptTotpSecret(user.totp.secretEncrypted);
-      const totpOk = verifyTotpCode({
-        secretBase32,
-        token: totp,
-        accountName: user.email,
-      });
-
-      if (!totpOk) {
-        await recordLoginFailure({ ipAddress, email });
-
-        const nextFailures = user.failedLoginAttempts + 1;
-        const lockedUntil =
-          nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
-            ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
-            : null;
-
-        await prisma.adminUser.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: nextFailures,
-            lockedUntil,
-          },
-        });
-
-        await createAuditLog({
-          actorUserId: user.id,
-          action: lockedUntil ? "LOGIN_LOCKED" : "LOGIN_FAILED",
-          targetType: "AdminUser",
-          targetId: user.id,
-          ipAddress,
-          userAgent,
-        });
-
-        return NextResponse.json(
-          {
-            message: lockedUntil
-              ? "Account temporarily locked"
-              : "Invalid TOTP code",
-          },
-          { status: lockedUntil ? 423 : 401 }
-        );
-      }
-    }
-
-    if (user.webauthnCredentials.length < 1) {
-      return NextResponse.json(
-        { message: "At least 1 security key is required" },
-        { status: 403 }
-      );
-    }
-
-    await prisma.adminUser.update({
-      where: { id: user.id },
-      data: {
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
-    });
-
-    await clearLoginFailures({ ipAddress, email });
 
     const options = await createWebAuthnAuthenticationOptions({
       userId: user.id,
@@ -427,3 +330,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Bad request" }, { status: 400 });
   }
 }
+
+
+export const POST = withApiSecurity(handler);

@@ -7,12 +7,10 @@ import {
   PENDING_WEBAUTHN_LOGIN_COOKIE,
 } from "@/lib/pending-webauthn-login";
 import { createAuditLog } from "@/lib/audit";
-import {
-  clearUnlockFailures,
-  recordUnlockFailure,
-} from "@/lib/rate-limit";
+import { clearUnlockFailures, recordUnlockFailure } from "@/lib/rate-limit";
+import { withApiSecurity } from "@/lib/api-guard";
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   try {
     const cookieStore = await cookies();
     const pendingCookie = cookieStore.get(PENDING_WEBAUTHN_LOGIN_COOKIE)?.value;
@@ -141,3 +139,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = withApiSecurity(handler);

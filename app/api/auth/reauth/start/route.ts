@@ -10,8 +10,29 @@ import {
   isSensitiveActionPurpose,
 } from "@/lib/sensitive-action";
 import { createAuditLog } from "@/lib/audit";
+import {
+  checkReauthRateLimit,
+  recordReauthFailure,
+} from "@/lib/rate-limit";
+import { withApiSecurity } from "@/lib/api-guard";
 
-export async function POST(req: Request) {
+function getRequestMeta(req: Request) {
+  const userAgent = req.headers.get("user-agent");
+
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const realIp = req.headers.get("x-real-ip");
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+
+  const ipAddress =
+    forwardedFor?.split(",")[0]?.trim() ||
+    realIp?.trim() ||
+    cfConnectingIp?.trim() ||
+    "local";
+
+  return { ipAddress, userAgent };
+}
+
+async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
     const body = await req.json().catch(() => null);
@@ -20,10 +41,36 @@ export async function POST(req: Request) {
     const totp = String(body?.totp ?? "").trim();
     const purpose = String(body?.purpose ?? "").trim();
 
+    const { ipAddress, userAgent } = getRequestMeta(req);
+
     if (!isSensitiveActionPurpose(purpose)) {
       return NextResponse.json(
         { message: "Invalid re-auth purpose" },
         { status: 400 }
+      );
+    }
+
+    const rateLimit = await checkReauthRateLimit({
+      ipAddress,
+      userId: user.id,
+      purpose,
+    });
+
+    if (rateLimit.blocked) {
+      await createAuditLog({
+        actorUserId: user.id,
+        action: "SENSITIVE_REAUTH_RATE_LIMITED",
+        targetType: "AdminUser",
+        targetId: user.id,
+        ipAddress,
+        userAgent,
+      });
+
+      return NextResponse.json(
+        {
+          message: `Too many verification attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
       );
     }
 
@@ -36,20 +83,31 @@ export async function POST(req: Request) {
     });
 
     if (!dbUser || !dbUser.isActive) {
+      await recordReauthFailure({
+        ipAddress,
+        userId: user.id,
+        purpose,
+      });
+
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const passwordOk = await verifyPassword(password, dbUser.passwordHash);
 
     if (!passwordOk) {
+      await recordReauthFailure({
+        ipAddress,
+        userId: dbUser.id,
+        purpose,
+      });
+
       await createAuditLog({
         actorUserId: dbUser.id,
         action: "SENSITIVE_REAUTH_FAILED",
         targetType: "AdminUser",
         targetId: dbUser.id,
-        ipAddress:
-          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-        userAgent: req.headers.get("user-agent"),
+        ipAddress,
+        userAgent,
       });
 
       return NextResponse.json(
@@ -61,6 +119,12 @@ export async function POST(req: Request) {
     const isTotpEnabled = Boolean(dbUser.totp?.isEnabled);
 
     if (!isTotpEnabled && purpose !== "totp_management") {
+      await recordReauthFailure({
+        ipAddress,
+        userId: dbUser.id,
+        purpose,
+      });
+
       return NextResponse.json(
         { message: "TOTP must be enabled before managing this section" },
         { status: 403 }
@@ -69,6 +133,12 @@ export async function POST(req: Request) {
 
     if (isTotpEnabled) {
       if (!/^\d{6}$/.test(totp)) {
+        await recordReauthFailure({
+          ipAddress,
+          userId: dbUser.id,
+          purpose,
+        });
+
         return NextResponse.json(
           { message: "Valid TOTP code is required" },
           { status: 401 }
@@ -83,14 +153,19 @@ export async function POST(req: Request) {
       });
 
       if (!totpOk) {
+        await recordReauthFailure({
+          ipAddress,
+          userId: dbUser.id,
+          purpose,
+        });
+
         await createAuditLog({
           actorUserId: dbUser.id,
           action: "SENSITIVE_REAUTH_FAILED",
           targetType: "AdminUser",
           targetId: dbUser.id,
-          ipAddress:
-            req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-          userAgent: req.headers.get("user-agent"),
+          ipAddress,
+          userAgent,
         });
 
         return NextResponse.json(
@@ -101,6 +176,12 @@ export async function POST(req: Request) {
     }
 
     if (dbUser.webauthnCredentials.length === 0) {
+      await recordReauthFailure({
+        ipAddress,
+        userId: dbUser.id,
+        purpose,
+      });
+
       return NextResponse.json(
         { message: "No registered security keys found" },
         { status: 400 }
@@ -138,3 +219,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = withApiSecurity(handler);

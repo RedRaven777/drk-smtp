@@ -1,98 +1,203 @@
 import { NextResponse } from "next/server";
+import { withApiSecurity } from "@/lib/api-guard";
 import { requireAdminUser } from "@/lib/auth";
-import {
-  getAllSmtpConfigsForAdmin,
-  saveSmtpConfigSecure,
-  SmtpConfigValidationError,
-} from "@/lib/smtp-config";
-import { smtpConfigSaveSchema } from "@/lib/smtp-config-schema";
+import { prisma } from "@/lib/prisma";
+import { encryptString, decryptString } from "@/lib/crypto";
 import { createAuditLog } from "@/lib/audit";
+import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
 
-export async function GET() {
-  try {
-    await requireAdminUser();
+const ALLOWED_KEYS = [
+  "CAREER",
+  "CONTACTS",
+  "NEWRECIPE",
+  "CONTACTS_POPUP",
+] as const;
 
-    const configs = await getAllSmtpConfigsForAdmin();
+type AllowedKey = (typeof ALLOWED_KEYS)[number];
 
-    return NextResponse.json({ configs });
-  } catch (error) {
-    console.error("GET SMTP CONFIG ERROR:", error);
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+function isAllowedKey(value: string): value is AllowedKey {
+  return ALLOWED_KEYS.includes(value as AllowedKey);
 }
 
-export async function POST(req: Request) {
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
-    const body = await req.json();
 
-    const parsed = smtpConfigSaveSchema.safeParse({
-      ...body,
-      smtpPort:
-        body?.smtpPort === "" ||
-        body?.smtpPort === undefined ||
-        body?.smtpPort === null
-          ? NaN
-          : Number(body.smtpPort),
+    const allowed = await requireRecentSensitiveAction({
+      userId: user.id,
+      purpose: "smtp_secret_management",
     });
 
-    if (!parsed.success) {
-      const fieldErrors = parsed.error.flatten().fieldErrors;
-      const firstError =
-        fieldErrors.smtpUser?.[0] ||
-        fieldErrors.smtpHost?.[0] ||
-        fieldErrors.smtpPort?.[0] ||
-        fieldErrors.newRecipient?.[0] ||
-        fieldErrors.newPassword?.[0] ||
-        "Invalid input";
-
+    if (!allowed) {
       return NextResponse.json(
-        {
-          message: firstError,
-          errors: fieldErrors,
-        },
+        { message: "Fresh verification is required" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+
+    const key = String(body?.key ?? "").trim();
+    const smtpUser = String(body?.smtpUser ?? "").trim();
+    const currentPassword = String(body?.currentPassword ?? "");
+    const newPassword = String(body?.newPassword ?? "");
+    const currentRecipient = String(body?.currentRecipient ?? "").trim();
+    const newRecipient = String(body?.newRecipient ?? "").trim();
+    const smtpHost = String(body?.smtpHost ?? "").trim();
+    const smtpPort = Number(body?.smtpPort);
+
+    if (!isAllowedKey(key)) {
+      return NextResponse.json(
+        { message: "Invalid SMTP config key" },
         { status: 400 }
       );
     }
 
-    const saved = await saveSmtpConfigSecure({
-      ...parsed.data,
-      updatedByUserId: user.id,
+    if (!smtpUser || !isValidEmail(smtpUser)) {
+      return NextResponse.json(
+        { message: "Valid SMTP user email is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!smtpHost) {
+      return NextResponse.json(
+        { message: "SMTP host is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+      return NextResponse.json(
+        { message: "SMTP port must be between 1 and 65535" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.smtpConfig.findUnique({
+      where: { key },
     });
 
-    const userAgent = req.headers.get("user-agent");
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
+    let nextPasswordEncrypted = existing?.smtpPasswordEncrypted ?? null;
+    let nextRecipientEncrypted = existing?.recipientEncrypted ?? null;
+
+    if (existing?.smtpPasswordEncrypted) {
+      if (newPassword) {
+        if (!currentPassword) {
+          return NextResponse.json(
+            { message: "Current SMTP password is required" },
+            { status: 400 }
+          );
+        }
+
+        const decryptedCurrentPassword = decryptString(
+          existing.smtpPasswordEncrypted
+        );
+
+        if (decryptedCurrentPassword !== currentPassword) {
+          return NextResponse.json(
+            { message: "Current SMTP password is incorrect" },
+            { status: 403 }
+          );
+        }
+
+        nextPasswordEncrypted = encryptString(newPassword);
+      }
+    } else {
+      if (!newPassword) {
+        return NextResponse.json(
+          { message: "SMTP password is required" },
+          { status: 400 }
+        );
+      }
+
+      nextPasswordEncrypted = encryptString(newPassword);
+    }
+
+    if (existing?.recipientEncrypted) {
+      if (newRecipient) {
+        if (!currentRecipient) {
+          return NextResponse.json(
+            { message: "Current recipient is required" },
+            { status: 400 }
+          );
+        }
+
+        const decryptedCurrentRecipient = decryptString(
+          existing.recipientEncrypted
+        );
+
+        if (decryptedCurrentRecipient !== currentRecipient) {
+          return NextResponse.json(
+            { message: "Current recipient is incorrect" },
+            { status: 403 }
+          );
+        }
+
+        if (!isValidEmail(newRecipient)) {
+          return NextResponse.json(
+            { message: "Valid new recipient email is required" },
+            { status: 400 }
+          );
+        }
+
+        nextRecipientEncrypted = encryptString(newRecipient);
+      }
+    } else {
+      if (!newRecipient || !isValidEmail(newRecipient)) {
+        return NextResponse.json(
+          { message: "Valid recipient email is required" },
+          { status: 400 }
+        );
+      }
+
+      nextRecipientEncrypted = encryptString(newRecipient);
+    }
+
+    const saved = await prisma.smtpConfig.upsert({
+      where: { key },
+      update: {
+        smtpUser,
+        smtpPasswordEncrypted: nextPasswordEncrypted,
+        recipientEncrypted: nextRecipientEncrypted,
+        smtpHost,
+        smtpPort,
+        updatedByUserId: user.id,
+      },
+      create: {
+        key,
+        smtpUser,
+        smtpPasswordEncrypted: nextPasswordEncrypted,
+        recipientEncrypted: nextRecipientEncrypted,
+        smtpHost,
+        smtpPort,
+        updatedByUserId: user.id,
+      },
+    });
 
     await createAuditLog({
       actorUserId: user.id,
       action: "SMTP_CONFIG_UPDATED",
       targetType: "SmtpConfig",
       targetId: saved.id,
-      ipAddress,
-      userAgent,
+      ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      userAgent: req.headers.get("user-agent"),
     });
 
     return NextResponse.json({
-      message: "SMTP config saved",
-      config: {
-        key: saved.key,
-        smtpUser: saved.smtpUser ?? "",
-        smtpHost: saved.smtpHost ?? "",
-        smtpPort: saved.smtpPort ?? null,
-        hasPassword: Boolean(saved.smtpPasswordEncrypted),
-        hasRecipient: Boolean(saved.recipientEncrypted),
-      },
+      message: "SMTP config saved successfully",
     });
   } catch (error) {
-    if (error instanceof SmtpConfigValidationError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 409 }
-      );
-    }
-
-    console.error("SAVE SMTP CONFIG ERROR:", error);
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    console.error("SMTP CONFIG ERROR:", error);
+    return NextResponse.json(
+      { message: "Failed to save SMTP config" },
+      { status: 500 }
+    );
   }
 }
+
+export const POST = withApiSecurity(handler);

@@ -11,6 +11,10 @@ const MAX_LOGIN_FAILURES_PER_EMAIL = 5;
 const MAX_UNLOCK_FAILURES_PER_IP = 10;
 const MAX_UNLOCK_FAILURES_PER_USER = 5;
 
+const MAX_REAUTH_FAILURES_PER_IP = 10;
+const MAX_REAUTH_FAILURES_PER_USER = 5;
+const MAX_REAUTH_FAILURES_PER_PURPOSE = 5;
+
 type RateLimitCheckResult = {
   blocked: boolean;
   retryAfterSeconds: number;
@@ -30,6 +34,10 @@ function normalizeUserId(userId?: string | null) {
   return (userId ?? "").trim();
 }
 
+function normalizePurpose(purpose?: string | null) {
+  return (purpose ?? "").trim();
+}
+
 function makeLoginIpScope(ipAddress?: string | null) {
   return `login:ip:${normalizeIp(ipAddress)}`;
 }
@@ -46,6 +54,26 @@ function makeUnlockIpScope(ipAddress?: string | null) {
 function makeUnlockUserScope(userId?: string | null) {
   const normalized = normalizeUserId(userId);
   return normalized ? `unlock:user:${normalized}` : null;
+}
+
+function makeReauthIpScope(ipAddress?: string | null) {
+  return `reauth:ip:${normalizeIp(ipAddress)}`;
+}
+
+function makeReauthUserScope(userId?: string | null) {
+  const normalized = normalizeUserId(userId);
+  return normalized ? `reauth:user:${normalized}` : null;
+}
+
+function makeReauthPurposeScope(userId?: string | null, purpose?: string | null) {
+  const normalizedUserId = normalizeUserId(userId);
+  const normalizedPurpose = normalizePurpose(purpose);
+
+  if (!normalizedUserId || !normalizedPurpose) {
+    return null;
+  }
+
+  return `reauth:user:${normalizedUserId}:purpose:${normalizedPurpose}`;
 }
 
 async function checkScope(scope: string | null): Promise<RateLimitCheckResult> {
@@ -75,9 +103,12 @@ async function checkScope(scope: string | null): Promise<RateLimitCheckResult> {
   };
 }
 
-async function checkScopes(scopes: Array<string | null>): Promise<RateLimitCheckResult> {
+async function checkScopes(
+  scopes: Array<string | null>
+): Promise<RateLimitCheckResult> {
   for (const scope of scopes) {
     const result = await checkScope(scope);
+
     if (result.blocked) {
       return result;
     }
@@ -238,5 +269,50 @@ export async function clearUnlockFailures(params: {
   await clearScopes([
     makeUnlockIpScope(params.ipAddress),
     makeUnlockUserScope(params.userId),
+  ]);
+}
+
+export async function checkReauthRateLimit(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+  purpose?: string | null;
+}): Promise<RateLimitCheckResult> {
+  return checkScopes([
+    makeReauthIpScope(params.ipAddress),
+    makeReauthUserScope(params.userId),
+    makeReauthPurposeScope(params.userId, params.purpose),
+  ]);
+}
+
+export async function recordReauthFailure(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+  purpose?: string | null;
+}) {
+  await recordFailuresForScopes([
+    {
+      scope: makeReauthIpScope(params.ipAddress),
+      maxFailures: MAX_REAUTH_FAILURES_PER_IP,
+    },
+    {
+      scope: makeReauthUserScope(params.userId),
+      maxFailures: MAX_REAUTH_FAILURES_PER_USER,
+    },
+    {
+      scope: makeReauthPurposeScope(params.userId, params.purpose),
+      maxFailures: MAX_REAUTH_FAILURES_PER_PURPOSE,
+    },
+  ]);
+}
+
+export async function clearReauthFailures(params: {
+  ipAddress?: string | null;
+  userId?: string | null;
+  purpose?: string | null;
+}) {
+  await clearScopes([
+    makeReauthIpScope(params.ipAddress),
+    makeReauthUserScope(params.userId),
+    makeReauthPurposeScope(params.userId, params.purpose),
   ]);
 }

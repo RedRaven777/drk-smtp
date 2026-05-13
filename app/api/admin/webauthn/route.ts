@@ -7,10 +7,11 @@ import {
   deleteWebAuthnCredential,
   listWebAuthnCredentialsForAdmin,
 } from "@/lib/webauthn-admin";
+import { withApiSecurity } from "@/lib/api-guard";
 
 const MINIMUM_KEYS = 1;
 
-export async function GET() {
+async function getHandler() {
   try {
     const user = await requireAdminUser();
 
@@ -30,7 +31,7 @@ export async function GET() {
   }
 }
 
-export async function PATCH(req: Request) {
+async function patchHandler(req: Request) {
   try {
     const user = await requireAdminUser();
     const body = await req.json().catch(() => null);
@@ -80,10 +81,7 @@ export async function PATCH(req: Request) {
     });
   } catch (error) {
     if (error instanceof WebAuthnAdminError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 409 }
-      );
+      return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
     console.error("PATCH WEBAUTHN ADMIN ERROR:", error);
@@ -91,7 +89,7 @@ export async function PATCH(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+async function deleteHandler(req: Request) {
   try {
     const user = await requireAdminUser();
     const body = await req.json().catch(() => null);
@@ -129,13 +127,14 @@ export async function DELETE(req: Request) {
     });
   } catch (error) {
     if (error instanceof WebAuthnAdminError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 409 }
-      );
+      return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
     console.error("DELETE WEBAUTHN ADMIN ERROR:", error);
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }
+
+export const GET = getHandler;
+export const PATCH = withApiSecurity(patchHandler);
+export const DELETE = withApiSecurity(deleteHandler);

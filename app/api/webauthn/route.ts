@@ -8,10 +8,11 @@ import {
   listWebAuthnCredentialsForAdmin,
 } from "@/lib/webauthn-admin";
 import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
+import { withApiSecurity } from "@/lib/api-guard";
 
 const MINIMUM_KEYS = 1;
 
-export async function GET() {
+async function getHandler() {
   try {
     const user = await requireAdminUser();
 
@@ -31,7 +32,7 @@ export async function GET() {
   }
 }
 
-export async function PATCH(req: Request) {
+async function patchHandler(req: Request) {
   try {
     const user = await requireAdminUser();
 
@@ -73,7 +74,8 @@ export async function PATCH(req: Request) {
     });
 
     const userAgent = req.headers.get("user-agent");
-    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
     await createAuditLog({
       actorUserId: user.id,
@@ -93,10 +95,7 @@ export async function PATCH(req: Request) {
     });
   } catch (error) {
     if (error instanceof WebAuthnAdminError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 409 }
-      );
+      return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
     console.error("PATCH WEBAUTHN ADMIN ERROR:", error);
@@ -104,7 +103,7 @@ export async function PATCH(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+async function deleteHandler(req: Request) {
   try {
     const user = await requireAdminUser();
 
@@ -138,7 +137,8 @@ export async function DELETE(req: Request) {
     });
 
     const userAgent = req.headers.get("user-agent");
-    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
     await createAuditLog({
       actorUserId: user.id,
@@ -154,13 +154,14 @@ export async function DELETE(req: Request) {
     });
   } catch (error) {
     if (error instanceof WebAuthnAdminError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 409 }
-      );
+      return NextResponse.json({ message: error.message }, { status: 409 });
     }
 
     console.error("DELETE WEBAUTHN ADMIN ERROR:", error);
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }
+
+export const GET = getHandler;
+export const PATCH = withApiSecurity(patchHandler);
+export const DELETE = withApiSecurity(deleteHandler);

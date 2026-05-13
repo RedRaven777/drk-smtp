@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { requireAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
 import { createAuditLog } from "@/lib/audit";
 import { getSessionCookieName } from "@/lib/session";
+import { withApiSecurity } from "@/lib/api-guard";
 
-export async function PATCH(req: Request) {
+async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
 
@@ -37,6 +37,7 @@ export async function PATCH(req: Request) {
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
       if (!emailRegex.test(newEmail)) {
         return NextResponse.json(
           { message: "Valid email is required" },
@@ -67,7 +68,8 @@ export async function PATCH(req: Request) {
         action: "ACCOUNT_EMAIL_CHANGED",
         targetType: "AdminUser",
         targetId: user.id,
-        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ipAddress:
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
         userAgent: req.headers.get("user-agent"),
       });
 
@@ -113,7 +115,8 @@ export async function PATCH(req: Request) {
         action: "ACCOUNT_PASSWORD_CHANGED",
         targetType: "AdminUser",
         targetId: user.id,
-        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        ipAddress:
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
         userAgent: req.headers.get("user-agent"),
       });
 
@@ -144,3 +147,5 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }
+
+export const PATCH = withApiSecurity(handler);

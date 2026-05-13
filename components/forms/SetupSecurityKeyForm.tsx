@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { startRegistration } from "@simplewebauthn/browser";
 import {
   Alert,
   Box,
@@ -13,8 +15,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { startRegistration } from "@simplewebauthn/browser";
-import { useRouter } from "next/navigation";
 
 type CredentialItem = {
   id: string;
@@ -36,15 +36,20 @@ export default function SetupSecurityKeyForm({
   requiredCount,
 }: Props) {
   const router = useRouter();
+
+  const [localKeyCount, setLocalKeyCount] = useState(keyCount);
+  const [localCredentials, setLocalCredentials] =
+    useState<CredentialItem[]>(credentials);
+
   const [keyName, setKeyName] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleRegisterKey = async () => {
-    setError("");
     setMessage("");
-    setIsLoading(true);
+    setError("");
+    setIsRegistering(true);
 
     try {
       const optionsRes = await fetch("/api/webauthn/register/options", {
@@ -54,7 +59,9 @@ export default function SetupSecurityKeyForm({
       const optionsJson = await optionsRes.json().catch(() => null);
 
       if (!optionsRes.ok || !optionsJson?.options) {
-        setError(optionsJson?.message ?? "Failed to create registration options");
+        setError(
+          optionsJson?.message ?? "Failed to create registration options"
+        );
         return;
       }
 
@@ -80,17 +87,32 @@ export default function SetupSecurityKeyForm({
         return;
       }
 
-      setMessage("Security key registered successfully");
+      const nextCount = localKeyCount + 1;
+
+      setLocalKeyCount(nextCount);
+      setLocalCredentials((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          name: keyName || "Unnamed security key",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+
       setKeyName("");
+      setMessage("Security key registered successfully");
+
       router.refresh();
+
+      if (nextCount >= requiredCount) {
+        router.replace("/admin/dashboard");
+      }
     } catch {
       setError("Security key registration was cancelled or failed");
     } finally {
-      setIsLoading(false);
+      setIsRegistering(false);
     }
   };
-
-  const keysRemaining = Math.max(0, requiredCount - keyCount);
 
   return (
     <Box
@@ -98,70 +120,66 @@ export default function SetupSecurityKeyForm({
       justifyContent="center"
       alignItems="center"
       minHeight="100vh"
-      bgcolor="#f7f7f7"
+      bgcolor="#f9fafb"
       px={2}
     >
       <Paper elevation={3} sx={{ p: 4, width: "100%", maxWidth: 520, borderRadius: 3 }}>
         <Stack spacing={2}>
           <Typography variant="h4" fontWeight={700}>
-            Security Key Setup
+            Register Security Keys
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            Register {requiredCount} YubiKeys before accessing the dashboard.
+            Admin: <strong>{adminEmail}</strong>
           </Typography>
 
-          <Typography variant="body2">
-            Admin email: <strong>{adminEmail}</strong>
-          </Typography>
-
-          <Alert severity={keysRemaining > 0 ? "warning" : "success"}>
-            Registered keys: <strong>{keyCount}</strong> / {requiredCount}
+          <Alert severity={localKeyCount >= requiredCount ? "success" : "warning"}>
+            Registered keys: <strong>{localKeyCount}</strong> /{" "}
+            <strong>{requiredCount}</strong>
           </Alert>
 
-          {message ? <Alert severity="success">{message}</Alert> : null}
-          {error ? <Alert severity="error">{error}</Alert> : null}
-
           <TextField
-            label="Key name"
-            placeholder={
-              keyCount === 0 ? "Example: Primary YubiKey" : "Example: Backup YubiKey"
-            }
+            label="Security key name"
+            placeholder="Example: Main YubiKey"
             value={keyName}
-            onChange={(e) => setKeyName(e.target.value)}
+            onChange={(event) => setKeyName(event.target.value)}
             fullWidth
           />
 
           <Button
             variant="contained"
             onClick={handleRegisterKey}
-            disabled={isLoading}
+            disabled={isRegistering}
           >
-            {isLoading ? "Registering..." : "Register Security Key"}
+            {isRegistering ? "Registering..." : "Register Security Key"}
           </Button>
 
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} mb={1}>
-              Registered keys
-            </Typography>
+          {localCredentials.length > 0 ? (
+            <List disablePadding>
+              {localCredentials.map((credential) => (
+                <ListItem
+                  key={credential.id}
+                  disableGutters
+                  sx={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 2,
+                    p: 2,
+                    mb: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={credential.name || "Unnamed security key"}
+                    secondary={`Added: ${new Date(
+                      credential.createdAt
+                    ).toLocaleString()}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : null}
 
-            {credentials.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No security keys registered yet.
-              </Typography>
-            ) : (
-              <List disablePadding>
-                {credentials.map((credential) => (
-                  <ListItem key={credential.id} disableGutters>
-                    <ListItemText
-                      primary={credential.name || "Unnamed key"}
-                      secondary={`Added: ${new Date(credential.createdAt).toLocaleString()}`}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
+          {message ? <Alert severity="success">{message}</Alert> : null}
+          {error ? <Alert severity="error">{error}</Alert> : null}
         </Stack>
       </Paper>
     </Box>

@@ -4,10 +4,11 @@ import { createWebAuthnRegistrationOptions } from "@/lib/webauthn";
 import { createAuditLog } from "@/lib/audit";
 import { countAdminSecurityKeys } from "@/lib/bootstrap";
 import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
+import { withApiSecurity } from "@/lib/api-guard";
 
 const MINIMUM_KEYS = 2;
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
     const currentKeyCount = await countAdminSecurityKeys(user.id);
@@ -32,7 +33,8 @@ export async function POST(req: Request) {
     });
 
     const userAgent = req.headers.get("user-agent");
-    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+    const ipAddress =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
     await createAuditLog({
       actorUserId: user.id,
@@ -52,3 +54,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = withApiSecurity(handler);

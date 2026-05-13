@@ -4,10 +4,11 @@ import QRCode from "qrcode";
 import { getCurrentAdminUser } from "@/lib/auth";
 import { encryptString } from "@/lib/crypto";
 import { generateTotpSetup, generateTotpSecret } from "@/lib/totp";
+import { withApiSecurity } from "@/lib/api-guard";
 
 const TOTP_SETUP_COOKIE = "totp_setup_secret";
 
-export async function POST() {
+async function handler() {
   const user = await getCurrentAdminUser();
 
   if (!user) {
@@ -35,3 +36,5 @@ export async function POST() {
     secretBase32,
   });
 }
+
+export const POST = withApiSecurity(handler);

@@ -9,11 +9,37 @@ import {
   getVerifiedSensitiveActionTtlSeconds,
 } from "@/lib/sensitive-action";
 import { createAuditLog } from "@/lib/audit";
+import {
+  checkReauthRateLimit,
+  clearReauthFailures,
+  recordReauthFailure,
+} from "@/lib/rate-limit";
+import { withApiSecurity } from "@/lib/api-guard";
 
-export async function POST(req: Request) {
+function getRequestMeta(req: Request) {
+  const userAgent = req.headers.get("user-agent");
+
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const realIp = req.headers.get("x-real-ip");
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+
+  const ipAddress =
+    forwardedFor?.split(",")[0]?.trim() ||
+    realIp?.trim() ||
+    cfConnectingIp?.trim() ||
+    "local";
+
+  return { ipAddress, userAgent };
+}
+
+async function handler(req: Request) {
+  const { ipAddress, userAgent } = getRequestMeta(req);
+
   try {
     const cookieStore = await cookies();
-    const pendingCookie = cookieStore.get(PENDING_SENSITIVE_ACTION_COOKIE)?.value;
+    const pendingCookie = cookieStore.get(
+      PENDING_SENSITIVE_ACTION_COOKIE
+    )?.value;
 
     if (!pendingCookie) {
       return NextResponse.json(
@@ -23,29 +49,80 @@ export async function POST(req: Request) {
     }
 
     const pending = parsePendingSensitiveAction(pendingCookie);
+
+    const rateLimit = await checkReauthRateLimit({
+      ipAddress,
+      userId: pending.userId,
+      purpose: pending.purpose,
+    });
+
+    if (rateLimit.blocked) {
+      await createAuditLog({
+        actorUserId: pending.userId,
+        action: "SENSITIVE_REAUTH_RATE_LIMITED",
+        targetType: "AdminUser",
+        targetId: pending.userId,
+        ipAddress,
+        userAgent,
+      });
+
+      return NextResponse.json(
+        {
+          message: `Too many verification attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => null);
     const response = body?.response;
 
     if (!response) {
+      await recordReauthFailure({
+        ipAddress,
+        userId: pending.userId,
+        purpose: pending.purpose,
+      });
+
       return NextResponse.json(
         { message: "Missing WebAuthn response" },
         { status: 400 }
       );
     }
 
-    await verifyWebAuthnAuthentication({
-      userId: pending.userId,
-      response,
-    });
+    try {
+      await verifyWebAuthnAuthentication({
+        userId: pending.userId,
+        response,
+      });
+    } catch (error) {
+      await recordReauthFailure({
+        ipAddress,
+        userId: pending.userId,
+        purpose: pending.purpose,
+      });
 
-    const userAgent = req.headers.get("user-agent");
-    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+      await createAuditLog({
+        actorUserId: pending.userId,
+        action: "SENSITIVE_REAUTH_FAILED",
+        targetType: "AdminUser",
+        targetId: pending.userId,
+        ipAddress,
+        userAgent,
+      });
+
+      throw error;
+    }
+
+    await clearReauthFailures({
+      ipAddress,
+      userId: pending.userId,
+      purpose: pending.purpose,
+    });
 
     await createAuditLog({
       actorUserId: pending.userId,
-      action: pending.purpose === "admin_unlock"
-        ? "ADMIN_UNLOCK_SUCCESS"
-        : "SENSITIVE_REAUTH_SUCCESS",
+      action: "SENSITIVE_REAUTH_SUCCESS",
       targetType: "AdminUser",
       targetId: pending.userId,
       ipAddress,
@@ -89,3 +166,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const POST = withApiSecurity(handler);

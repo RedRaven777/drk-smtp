@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import AdminShell from "@/components/dashboard/layout/AdminShell";
 import AdminTabGuard from "@/components/admin/AdminTabGuard";
 import SmtpSettingsForm from "@/components/dashboard/forms/SmtpSettingsForm";
+import SensitiveActionReauthDialog from "@/components/dashboard/forms/SensitiveActionReauthDialog";
 import {
   SMTP_CONFIG_KEYS,
   initialSmtpForm,
   type AdminSmtpConfigDto,
   type SmtpFormState,
 } from "@/types/dashboard";
+import { clearAdminTabUnlock } from "@/lib/admin-unlock";
 
 type Props = {
   smtpConfigs: AdminSmtpConfigDto[];
@@ -21,6 +23,15 @@ type SaveState = {
   message: string;
   error: string;
 };
+
+type PendingSmtpSave =
+  | {
+      key: string;
+      values: SmtpFormState;
+      setSaveState: React.Dispatch<React.SetStateAction<SaveState>>;
+      setFormState: React.Dispatch<React.SetStateAction<SmtpFormState>>;
+    }
+  | null;
 
 const initialSaveState: SaveState = {
   loading: false,
@@ -34,6 +45,10 @@ export default function DashboardClient({ smtpConfigs }: Props) {
   const configMap = useMemo(() => {
     return Object.fromEntries(smtpConfigs.map((config) => [config.key, config]));
   }, [smtpConfigs]);
+
+  const [pendingSmtpSave, setPendingSmtpSave] =
+    useState<PendingSmtpSave>(null);
+  const [reauthOpen, setReauthOpen] = useState(false);
 
   const [careerSmtp, setCareerSmtp] = useState<SmtpFormState>({
     ...initialSmtpForm,
@@ -89,10 +104,13 @@ export default function DashboardClient({ smtpConfigs }: Props) {
 
   const [careerSave, setCareerSave] = useState<SaveState>(initialSaveState);
   const [contactsSave, setContactsSave] = useState<SaveState>(initialSaveState);
-  const [newrecipeSave, setNewrecipeSave] = useState<SaveState>(initialSaveState);
-  const [contactsPopupSave, setContactsPopupSave] = useState<SaveState>(initialSaveState);
+  const [newrecipeSave, setNewrecipeSave] =
+    useState<SaveState>(initialSaveState);
+  const [contactsPopupSave, setContactsPopupSave] =
+    useState<SaveState>(initialSaveState);
 
   const handleLogout = async () => {
+    clearAdminTabUnlock();
     await fetch("/api/logout", { method: "POST" });
     router.replace("/");
     router.refresh();
@@ -102,6 +120,12 @@ export default function DashboardClient({ smtpConfigs }: Props) {
     if (!values.user.trim()) return "SMTP user is required";
     if (!values.smtpHost.trim()) return "SMTP host is required";
     if (!values.smtpPort.trim()) return "SMTP port is required";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(values.user.trim())) {
+      return "SMTP user must be a valid email";
+    }
 
     const port = Number(values.smtpPort);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -116,10 +140,30 @@ export default function DashboardClient({ smtpConfigs }: Props) {
       return "New recipient is required";
     }
 
+    if (!values.hasRecipient && !emailRegex.test(values.newRecipient.trim())) {
+      return "Recipient must be a valid email";
+    }
+
+    if (values.hasRecipient && values.newRecipient.trim()) {
+      if (!values.currentRecipient.trim()) {
+        return "Current recipient is required to change recipient";
+      }
+
+      if (!emailRegex.test(values.newRecipient.trim())) {
+        return "New recipient must be a valid email";
+      }
+    }
+
+    if (values.hasPassword && values.newPassword.trim()) {
+      if (!values.currentPassword) {
+        return "Current password is required to change password";
+      }
+    }
+
     return null;
   };
 
-  const saveConfig = async (
+  const requestSaveConfig = (
     values: SmtpFormState,
     key: string,
     setSaveState: React.Dispatch<React.SetStateAction<SaveState>>,
@@ -135,6 +179,21 @@ export default function DashboardClient({ smtpConfigs }: Props) {
       });
       return;
     }
+
+    setPendingSmtpSave({
+      key,
+      values,
+      setSaveState,
+      setFormState,
+    });
+
+    setReauthOpen(true);
+  };
+
+  const saveConfigAfterReauth = async () => {
+    if (!pendingSmtpSave) return;
+
+    const { values, key, setSaveState, setFormState } = pendingSmtpSave;
 
     setSaveState({
       loading: true,
@@ -186,12 +245,16 @@ export default function DashboardClient({ smtpConfigs }: Props) {
         hasPassword: true,
         hasRecipient: true,
       }));
+
+      router.refresh();
     } catch {
       setSaveState({
         loading: false,
         message: "",
         error: "Failed to save config",
       });
+    } finally {
+      setPendingSmtpSave(null);
     }
   };
 
@@ -203,7 +266,12 @@ export default function DashboardClient({ smtpConfigs }: Props) {
           values={careerSmtp}
           onChange={setCareerSmtp}
           onSubmit={() =>
-            saveConfig(careerSmtp, SMTP_CONFIG_KEYS.CAREER, setCareerSave, setCareerSmtp)
+            requestSaveConfig(
+              careerSmtp,
+              SMTP_CONFIG_KEYS.CAREER,
+              setCareerSave,
+              setCareerSmtp
+            )
           }
           isSaving={careerSave.loading}
           message={careerSave.message}
@@ -215,7 +283,12 @@ export default function DashboardClient({ smtpConfigs }: Props) {
           values={contactsSmtp}
           onChange={setContactsSmtp}
           onSubmit={() =>
-            saveConfig(contactsSmtp, SMTP_CONFIG_KEYS.CONTACTS, setContactsSave, setContactsSmtp)
+            requestSaveConfig(
+              contactsSmtp,
+              SMTP_CONFIG_KEYS.CONTACTS,
+              setContactsSave,
+              setContactsSmtp
+            )
           }
           isSaving={contactsSave.loading}
           message={contactsSave.message}
@@ -227,7 +300,12 @@ export default function DashboardClient({ smtpConfigs }: Props) {
           values={newrecipeSmtp}
           onChange={setNewrecipeSmtp}
           onSubmit={() =>
-            saveConfig(newrecipeSmtp, SMTP_CONFIG_KEYS.NEWRECIPE, setNewrecipeSave, setNewrecipeSmtp)
+            requestSaveConfig(
+              newrecipeSmtp,
+              SMTP_CONFIG_KEYS.NEWRECIPE,
+              setNewrecipeSave,
+              setNewrecipeSmtp
+            )
           }
           isSaving={newrecipeSave.loading}
           message={newrecipeSave.message}
@@ -239,7 +317,7 @@ export default function DashboardClient({ smtpConfigs }: Props) {
           values={contactsPopupSmtp}
           onChange={setContactsPopupSmtp}
           onSubmit={() =>
-            saveConfig(
+            requestSaveConfig(
               contactsPopupSmtp,
               SMTP_CONFIG_KEYS.CONTACTS_POPUP,
               setContactsPopupSave,
@@ -249,6 +327,19 @@ export default function DashboardClient({ smtpConfigs }: Props) {
           isSaving={contactsPopupSave.loading}
           message={contactsPopupSave.message}
           error={contactsPopupSave.error}
+        />
+
+        <SensitiveActionReauthDialog
+          open={reauthOpen}
+          purpose="smtp_secret_management"
+          title="Confirm SMTP changes"
+          description="To save SMTP settings, enter your password, current TOTP code, and confirm with a registered security key."
+          totpRequired
+          onClose={() => {
+            setReauthOpen(false);
+            setPendingSmtpSave(null);
+          }}
+          onVerified={saveConfigAfterReauth}
         />
       </AdminShell>
     </AdminTabGuard>

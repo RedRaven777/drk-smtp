@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getSessionCookieName, touchSessionByToken } from "@/lib/session";
 import { createAuditLog } from "@/lib/audit";
+import { withApiSecurity } from "@/lib/api-guard";
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(getSessionCookieName())?.value;
 
@@ -90,3 +91,5 @@ export async function POST(req: Request) {
 
   return res;
 }
+
+export const POST = withApiSecurity(handler);
