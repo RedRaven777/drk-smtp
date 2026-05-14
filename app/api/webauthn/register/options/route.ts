@@ -1,57 +1,22 @@
-import { NextResponse } from "next/server";
-import { requireAdminUser } from "@/lib/auth";
-import { createWebAuthnRegistrationOptions } from "@/lib/webauthn";
-import { createAuditLog } from "@/lib/audit";
-import { countAdminSecurityKeys } from "@/lib/bootstrap";
-import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
 import { withApiSecurity } from "@/lib/api-guard";
-
-const MINIMUM_KEYS = 2;
+import { requireAdminUser } from "@/lib/auth";
+import { getRequestMeta } from "@/lib/api/request";
+import { badRequest } from "@/lib/api/response";
+import { createAdminWebAuthnRegistrationOptions } from "@/lib/admin-webauthn/admin-webauthn.service";
 
 async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
-    const currentKeyCount = await countAdminSecurityKeys(user.id);
+    const meta = getRequestMeta(req);
 
-    if (currentKeyCount >= MINIMUM_KEYS) {
-      const allowed = await requireRecentSensitiveAction({
-        userId: user.id,
-        purpose: "webauthn_management",
-      });
-
-      if (!allowed) {
-        return NextResponse.json(
-          { message: "Fresh verification is required" },
-          { status: 403 }
-        );
-      }
-    }
-
-    const options = await createWebAuthnRegistrationOptions({
+    return createAdminWebAuthnRegistrationOptions({
       userId: user.id,
       userEmail: user.email,
+      meta,
     });
-
-    const userAgent = req.headers.get("user-agent");
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-
-    await createAuditLog({
-      actorUserId: user.id,
-      action: "WEBAUTHN_REGISTRATION_OPTIONS_CREATED",
-      targetType: "AdminUser",
-      targetId: user.id,
-      ipAddress,
-      userAgent,
-    });
-
-    return NextResponse.json({ options });
   } catch (error) {
     console.error("WEBAUTHN REGISTER OPTIONS ERROR:", error);
-    return NextResponse.json(
-      { message: "Failed to create WebAuthn registration options" },
-      { status: 400 }
-    );
+    return badRequest("Failed to create WebAuthn registration options");
   }
 }
 

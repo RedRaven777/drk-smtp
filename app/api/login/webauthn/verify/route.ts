@@ -1,142 +1,20 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createSession, getSessionCookieName } from "@/lib/session";
-import { verifyWebAuthnAuthentication } from "@/lib/webauthn";
-import {
-  parsePendingWebAuthnLogin,
-  PENDING_WEBAUTHN_LOGIN_COOKIE,
-} from "@/lib/pending-webauthn-login";
-import { createAuditLog } from "@/lib/audit";
-import { clearUnlockFailures, recordUnlockFailure } from "@/lib/rate-limit";
 import { withApiSecurity } from "@/lib/api-guard";
+import { getRequestMeta, readJsonBody } from "@/lib/api/request";
+import { badRequest } from "@/lib/api/response";
+import { verifyPendingWebAuthnLogin } from "@/lib/login/webauthn-login.service";
 
 async function handler(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const pendingCookie = cookieStore.get(PENDING_WEBAUTHN_LOGIN_COOKIE)?.value;
+    const body = await readJsonBody(req);
+    const meta = getRequestMeta(req);
 
-    if (!pendingCookie) {
-      return NextResponse.json(
-        { message: "Pending WebAuthn login not found" },
-        { status: 401 }
-      );
-    }
-
-    const pending = parsePendingWebAuthnLogin(pendingCookie);
-    const body = await req.json().catch(() => null);
-    const response = body?.response;
-    const unlockOnly = Boolean(body?.unlockOnly);
-
-    const userAgent = req.headers.get("user-agent");
-    const forwardedFor = req.headers.get("x-forwarded-for");
-    const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? null;
-
-    if (!response) {
-      if (unlockOnly) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: pending.userId,
-        });
-      }
-
-      return NextResponse.json(
-        { message: "Missing WebAuthn response" },
-        { status: 400 }
-      );
-    }
-
-    try {
-      await verifyWebAuthnAuthentication({
-        userId: pending.userId,
-        response,
-      });
-    } catch (error) {
-      if (unlockOnly) {
-        await recordUnlockFailure({
-          ipAddress,
-          userId: pending.userId,
-        });
-
-        await createAuditLog({
-          actorUserId: pending.userId,
-          action: "ADMIN_UNLOCK_FAILED",
-          targetType: "AdminUser",
-          targetId: pending.userId,
-          ipAddress,
-          userAgent,
-        });
-      }
-
-      throw error;
-    }
-
-    const res = NextResponse.json({
-      message: unlockOnly ? "Admin unlock verified" : "Logged in",
-      unlockOnly,
+    return verifyPendingWebAuthnLogin({
+      body,
+      meta,
     });
-
-    res.cookies.set({
-      name: PENDING_WEBAUTHN_LOGIN_COOKIE,
-      value: "",
-      path: "/",
-      maxAge: 0,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
-
-    if (unlockOnly) {
-      await clearUnlockFailures({
-        ipAddress,
-        userId: pending.userId,
-      });
-
-      await createAuditLog({
-        actorUserId: pending.userId,
-        action: "ADMIN_UNLOCK_SUCCESS",
-        targetType: "AdminUser",
-        targetId: pending.userId,
-        ipAddress,
-        userAgent,
-      });
-
-      return res;
-    }
-
-    const { token, expiresAt } = await createSession({
-      userId: pending.userId,
-      userAgent,
-      ipAddress,
-      idleTtlSeconds: 15 * 60,
-      absoluteTtlSeconds: 8 * 60 * 60,
-    });
-
-    await createAuditLog({
-      actorUserId: pending.userId,
-      action: "LOGIN_SUCCESS",
-      targetType: "AdminUser",
-      targetId: pending.userId,
-      ipAddress,
-      userAgent,
-    });
-
-    res.cookies.set({
-      name: getSessionCookieName(),
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      expires: expiresAt,
-    });
-
-    return res;
   } catch (error) {
     console.error("WEBAUTHN LOGIN VERIFY ERROR:", error);
-    return NextResponse.json(
-      { message: "Failed to verify security key" },
-      { status: 400 }
-    );
+    return badRequest("Failed to verify security key");
   }
 }
 
