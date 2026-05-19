@@ -1,6 +1,6 @@
 import "server-only";
 
-import { decryptString, encryptString } from "@/lib/crypto";
+import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
 import { cookies } from "next/headers";
 
 export const PENDING_SENSITIVE_ACTION_COOKIE =

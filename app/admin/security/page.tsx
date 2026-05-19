@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import SecurityClient from "./SecurityClient";
-import { requireAdminUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { countAdminSecurityKeys } from "@/lib/bootstrap";
-import { listWebAuthnCredentialsForAdmin } from "@/lib/webauthn-admin";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { countAdminSecurityKeys } from "@/lib/bootstrap/bootstrap.service";
+import { listWebAuthnCredentialsForAdmin } from "@/lib/admin-webauthn/admin-webauthn.service";
 
 const REQUIRED_SECURITY_KEYS = 2;
 

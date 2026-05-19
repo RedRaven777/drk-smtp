@@ -12,7 +12,7 @@ import {
   type AdminSmtpConfigDto,
   type SmtpFormState,
 } from "@/types/dashboard";
-import { clearAdminTabUnlock } from "@/lib/admin-unlock";
+import { clearAdminTabUnlock } from "@/lib/security/admin-unlock.service";
 
 type Props = {
   smtpConfigs: AdminSmtpConfigDto[];

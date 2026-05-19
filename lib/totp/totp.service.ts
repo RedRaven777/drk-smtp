@@ -1,5 +1,5 @@
 import * as OTPAuth from "otpauth";
-import { decryptString, encryptString } from "@/lib/crypto";
+import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
 
 const TOTP_ISSUER = process.env.TOTP_ISSUER || "drkloos-smtp";
 

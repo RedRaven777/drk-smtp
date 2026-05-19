@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAdminUser } from "@/lib/auth";
-import { createAuditLog } from "@/lib/audit";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { createAuditLog } from "@/lib/audit/audit.service";
 import {
   WebAuthnAdminError,
   renameWebAuthnCredential,
   deleteWebAuthnCredential,
   listWebAuthnCredentialsForAdmin,
-} from "@/lib/webauthn-admin";
-import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
-import { withApiSecurity } from "@/lib/api-guard";
+} from "@/lib/admin-webauthn/admin-webauthn.service";
+import { requireRecentSensitiveAction } from "@/lib/security/sensitive-action.service";
+import { withApiSecurity } from "@/lib/api/api.guard";
 
 const MINIMUM_KEYS = 1;
 

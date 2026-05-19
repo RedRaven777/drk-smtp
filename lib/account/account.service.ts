@@ -1,16 +1,16 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/password";
-import { getSessionCookieName } from "@/lib/session";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { hashPassword } from "@/lib/password/password.service";
+import { getSessionCookieName } from "@/lib/session/session.service";
 import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/request";
+import type { RequestMeta } from "@/lib/api/api.response";
 import {
   isValidEmail,
   toCleanLowercaseString,
   toCleanString,
-} from "@/lib/validation";
-import { badRequest, conflict, ok } from "@/lib/api/response";
+} from "@/lib/validation/validation.service";
+import { badRequest, conflict, ok } from "@/lib/api/api.response";
 
 export function getAccountAction(body: unknown) {
   return toCleanString((body as Record<string, unknown> | null)?.action);

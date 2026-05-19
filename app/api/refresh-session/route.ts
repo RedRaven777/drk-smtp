@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getSessionCookieName, touchSessionByToken } from "@/lib/session";
-import { createAuditLog } from "@/lib/audit";
-import { withApiSecurity } from "@/lib/api-guard";
+import { getSessionCookieName, touchSessionByToken } from "@/lib/session/session.service";
+import { createAuditLog } from "@/lib/audit/audit.service";
+import { withApiSecurity } from "@/lib/api/api.guard";
 
 async function handler(req: Request) {
   const cookieStore = await cookies();

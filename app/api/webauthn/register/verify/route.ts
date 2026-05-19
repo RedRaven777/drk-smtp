@@ -1,7 +1,7 @@
-import { withApiSecurity } from "@/lib/api-guard";
-import { requireAdminUser } from "@/lib/auth";
-import { getRequestMeta, readJsonBody } from "@/lib/api/request";
-import { badRequest } from "@/lib/api/response";
+import { withApiSecurity } from "@/lib/api/api.guard";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { getRequestMeta, readJsonBody } from "@/lib/api/api.request";
+import { badRequest } from "@/lib/api/api.response";
 import { verifyAdminWebAuthnRegistration } from "@/lib/admin-webauthn/admin-webauthn.service";
 
 async function handler(req: Request) {

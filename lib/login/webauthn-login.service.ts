@@ -1,16 +1,16 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { verifyWebAuthnAuthentication } from "@/lib/webauthn";
-import { createSession, getSessionCookieName } from "@/lib/session";
+import { verifyWebAuthnAuthentication } from "@/lib/webauthn/webauthn.service";
+import { createSession, getSessionCookieName } from "@/lib/session/session.service";
 import {
   PENDING_WEBAUTHN_LOGIN_COOKIE,
   parsePendingWebAuthnLogin,
-} from "@/lib/pending-webauthn-login";
-import { clearUnlockFailures, recordUnlockFailure } from "@/lib/rate-limit";
+} from "@/lib/login/pending-webauthn-login.service";
+import { clearUnlockFailures, recordUnlockFailure } from "@/lib/rate-limit/rate-limit.service";
 import { auditAction } from "@/lib/audit/audit.service";
 import type { RequestMeta } from "@/lib/api/request";
-import { badRequest, ok, unauthorized } from "@/lib/api/response";
+import { badRequest, ok, unauthorized } from "@/lib/api/api.response";
 
 export async function verifyPendingWebAuthnLogin(params: {
   body: unknown;

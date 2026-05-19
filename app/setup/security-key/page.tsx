@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { requireAdminUser } from "@/lib/auth";
-import { countAdminSecurityKeys } from "@/lib/bootstrap";
-import { prisma } from "@/lib/prisma";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { countAdminSecurityKeys } from "@/lib/bootstrap/bootstrap.service";
+import { prisma } from "@/lib/prisma/prisma.client";
 import SetupSecurityKeyForm from "@/components/forms/SetupSecurityKeyForm";
 
 const REQUIRED_SECURITY_KEYS = 2;

@@ -13,7 +13,7 @@ import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
 } from "@simplewebauthn/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma.client";
 
 const rpName = process.env.WEBAUTHN_RP_NAME;
 const rpID = process.env.WEBAUTHN_RP_ID;

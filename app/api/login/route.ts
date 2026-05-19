@@ -1,6 +1,6 @@
-import { withApiSecurity } from "@/lib/api-guard";
-import { getRequestMeta, readJsonBody } from "@/lib/api/request";
-import { badRequest } from "@/lib/api/response";
+import { withApiSecurity } from "@/lib/api/api.guard";
+import { getRequestMeta, readJsonBody } from "@/lib/api/api.request";
+import { badRequest } from "@/lib/api/api.response";
 import { handleAdminLogin, handleAdminUnlock } from "@/lib/login/login.service";
 
 async function handler(req: Request) {

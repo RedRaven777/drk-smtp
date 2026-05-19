@@ -2,18 +2,18 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import QRCode from "qrcode";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma.client";
 import { auditAction } from "@/lib/audit/audit.service";
 import type { RequestMeta } from "@/lib/api/request";
-import { badRequest, ok } from "@/lib/api/response";
-import { decryptString, encryptString } from "@/lib/crypto";
+import { badRequest, ok } from "@/lib/api/api.response";
+import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
 import {
   encryptTotpSecret,
   generateTotpSecret,
   generateTotpSetup,
   verifyTotpCode,
-} from "@/lib/totp";
-import { isValidTotpCode, toCleanString } from "@/lib/validation";
+} from "@/lib/totp/totp.service";
+import { isValidTotpCode, toCleanString } from "@/lib/validation/validation.service";
 
 const TOTP_SETUP_COOKIE = "admin_totp_setup_secret";
 

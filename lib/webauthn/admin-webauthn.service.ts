@@ -1,6 +1,6 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma.client";
 
 export class WebAuthnAdminError extends Error {
   constructor(message: string) {

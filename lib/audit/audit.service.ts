@@ -1,7 +1,16 @@
 import "server-only";
 
-import { createAuditLog } from "@/lib/audit";
-import type { RequestMeta } from "@/lib/api/request";
+import { prisma } from "@/lib/prisma/prisma.client";
+import type { RequestMeta } from "@/lib/api/api.request";
+
+type CreateAuditLogParams = {
+  actorUserId?: string | null;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
 
 type AuditActionParams = {
   actorUserId?: string | null;
@@ -11,6 +20,26 @@ type AuditActionParams = {
   meta: RequestMeta;
 };
 
+export async function createAuditLog({
+  actorUserId,
+  action,
+  targetType,
+  targetId,
+  ipAddress,
+  userAgent,
+}: CreateAuditLogParams) {
+  return prisma.auditLog.create({
+    data: {
+      actorUserId: actorUserId ?? null,
+      action,
+      targetType,
+      targetId: targetId ?? null,
+      ipAddress: ipAddress ?? null,
+      userAgent: userAgent ?? null,
+    },
+  });
+}
+
 export async function auditAction({
   actorUserId,
   action,
@@ -18,11 +47,11 @@ export async function auditAction({
   targetId,
   meta,
 }: AuditActionParams) {
-  await createAuditLog({
-    actorUserId: actorUserId ?? undefined,
+  return createAuditLog({
+    actorUserId,
     action,
     targetType,
-    targetId: targetId ?? undefined,
+    targetId,
     ipAddress: meta.ipAddress,
     userAgent: meta.userAgent,
   });

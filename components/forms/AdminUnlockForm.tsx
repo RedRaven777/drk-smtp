@@ -13,7 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import PasswordField from "@/components/forms/fields/PasswordField";
 import TotpField from "@/components/forms/fields/TotpField";
-import { writeAdminTabUnlock } from "@/lib/admin-unlock";
+import { writeAdminTabUnlock } from "@/lib/security/admin-unlock.service";
 
 export default function AdminUnlockForm() {
   const router = useRouter();

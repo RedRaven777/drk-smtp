@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma/prisma.client";
 
 const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_IDLE_TTL_SECONDS = 15 * 60;

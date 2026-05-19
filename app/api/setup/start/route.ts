@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import QRCode from "qrcode";
-import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/password";
-import { isAppInitialized } from "@/lib/bootstrap";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { hashPassword } from "@/lib/password/password.service";
+import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
 import { initialSetupStartSchema } from "@/lib/schemas";
-import { generateTotpSecret, generateTotpSetup } from "@/lib/totp";
+import { generateTotpSecret, generateTotpSetup } from "@/lib/totp/totp.service";
 import { serializePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup";
 
 export async function POST(req: Request) {

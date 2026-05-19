@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSessionByToken, getSessionCookieName } from "@/lib/session";
+import { getSessionByToken, getSessionCookieName } from "@/lib/session/session.service";
 
 export async function getCurrentAdminUser() {
   const cookieStore = await cookies();

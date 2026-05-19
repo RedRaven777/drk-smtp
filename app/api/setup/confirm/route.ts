@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import { isAppInitialized } from "@/lib/bootstrap";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
 import { initialSetupConfirmSchema } from "@/lib/schemas";
 import { parsePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup";
-import { encryptTotpSecret, verifyTotpCode } from "@/lib/totp";
-import { createSession, getSessionCookieName } from "@/lib/session";
+import { encryptTotpSecret, verifyTotpCode } from "@/lib/totp/totp.service";
+import { createSession, getSessionCookieName } from "@/lib/session/session.service";
 
 export async function POST(req: Request) {
 	try {

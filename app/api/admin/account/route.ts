@@ -1,8 +1,8 @@
-import { withApiSecurity } from "@/lib/api-guard";
-import { requireAdminUser } from "@/lib/auth";
-import { requireRecentSensitiveAction } from "@/lib/sensitive-action";
-import { getRequestMeta, readJsonBody } from "@/lib/api/request";
-import { badRequest, forbidden, unauthorized } from "@/lib/api/response";
+import { withApiSecurity } from "@/lib/api/api.guard";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { requireRecentSensitiveAction } from "@/lib/security/sensitive-action.service";
+import { getRequestMeta, readJsonBody } from "@/lib/api/api.request";
+import { badRequest, forbidden, unauthorized } from "@/lib/api/api.response";
 import {
   changeAdminEmail,
   changeAdminPassword,

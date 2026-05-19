@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
-import { hasValidAdminTabUnlock } from "@/lib/admin-unlock";
+import { hasValidAdminTabUnlock } from "@/lib/security/admin-unlock.service";
 
 type Props = {
   children: React.ReactNode;

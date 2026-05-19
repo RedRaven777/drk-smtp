@@ -1,15 +1,12 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { assertSameOrigin } from "@/lib/security";
+import { assertSameOrigin } from "@/lib/security/security.service";
 
-export function withApiSecurity(
-  handler: (req: Request) => Promise<Response>
-) {
+export function withApiSecurity(handler: (req: Request) => Promise<Response>) {
   return async (req: Request): Promise<Response> => {
     try {
       assertSameOrigin(req);
-
       return await handler(req);
     } catch (error) {
       console.error("API SECURITY BLOCKED:", error);

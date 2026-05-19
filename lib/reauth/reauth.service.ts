@@ -1,10 +1,10 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/password";
-import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
-import { createWebAuthnAuthenticationOptions, verifyWebAuthnAuthentication } from "@/lib/webauthn";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { verifyPassword } from "@/lib/password/password.service";
+import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp/totp.service";
+import { createWebAuthnAuthenticationOptions, verifyWebAuthnAuthentication } from "@/lib/webauthn/webauthn.service";
 import {
   PENDING_SENSITIVE_ACTION_COOKIE,
   VERIFIED_SENSITIVE_ACTION_COOKIE,
@@ -13,16 +13,16 @@ import {
   parsePendingSensitiveAction,
   serializePendingSensitiveAction,
   serializeVerifiedSensitiveAction,
-} from "@/lib/sensitive-action";
+} from "@/lib/security/sensitive-action.service";
 import {
   checkReauthRateLimit,
   clearReauthFailures,
   recordReauthFailure,
-} from "@/lib/rate-limit";
+} from "@/lib/rate-limit/rate-limit.service";
 import { auditAction } from "@/lib/audit/audit.service";
 import type { RequestMeta } from "@/lib/api/request";
-import { badRequest, forbidden, ok, tooManyRequests, unauthorized } from "@/lib/api/response";
-import { isValidTotpCode, toCleanString } from "@/lib/validation";
+import { badRequest, forbidden, ok, tooManyRequests, unauthorized } from "@/lib/api/api.response";
+import { isValidTotpCode, toCleanString } from "@/lib/validation/validation.service";
 
 export async function startSensitiveReauth(params: {
   userId: string;

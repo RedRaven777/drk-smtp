@@ -1,26 +1,39 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/password";
-import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
-import { isAppInitialized } from "@/lib/bootstrap";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { verifyPassword } from "@/lib/password/password.service";
+import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp/totp.service";
+import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
 import {
   checkLoginRateLimit,
   checkUnlockRateLimit,
   recordLoginFailure,
   recordUnlockFailure,
-} from "@/lib/rate-limit";
+} from "@/lib/rate-limit/rate-limit.service";
 import { auditAction } from "@/lib/audit/audit.service";
-import { createWebAuthnAuthenticationOptions } from "@/lib/webauthn";
+import { createWebAuthnAuthenticationOptions } from "@/lib/webauthn/webauthn.service";
 import {
   PENDING_WEBAUTHN_LOGIN_COOKIE,
   serializePendingWebAuthnLogin,
-} from "@/lib/pending-webauthn-login";
-import { getCurrentAdminUser } from "@/lib/auth";
-import { createSession, getSessionCookieName } from "@/lib/session";
+} from "@/lib/login/pending-webauthn-login.service";
+import { getCurrentAdminUser } from "@/lib/auth/auth.service";
+import {
+  createSession,
+  getSessionCookieName,
+} from "@/lib/session/session.service";
 import type { RequestMeta } from "@/lib/api/request";
-import { forbidden, locked, ok, tooManyRequests, unauthorized } from "@/lib/api/response";
-import { isValidTotpCode, toCleanLowercaseString, toCleanString } from "@/lib/validation";
+import {
+  forbidden,
+  locked,
+  ok,
+  tooManyRequests,
+  unauthorized,
+} from "@/lib/api/api.response";
+import {
+  isValidTotpCode,
+  toCleanLowercaseString,
+  toCleanString,
+} from "@/lib/validation/validation.service";
 
 const ACCOUNT_LOCKOUT_THRESHOLD = 5;
 const ACCOUNT_LOCKOUT_MINUTES = 15;
@@ -70,7 +83,9 @@ async function createPendingWebAuthnLogin(params: {
 
   res.cookies.set({
     name: PENDING_WEBAUTHN_LOGIN_COOKIE,
-    value: serializePendingWebAuthnLogin({ userId: params.userId }),
+    value: serializePendingWebAuthnLogin({
+      userId: params.userId,
+    }),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -111,11 +126,14 @@ export async function handleAdminUnlock(params: {
   }
 
   const body = params.body as Record<string, unknown> | null;
+
   const password = String(body?.password ?? "");
   const totp = toCleanString(body?.totp);
 
   const user = await prisma.adminUser.findUnique({
-    where: { id: currentUser.id },
+    where: {
+      id: currentUser.id,
+    },
     include: {
       totp: true,
       webauthnCredentials: true,
@@ -126,7 +144,10 @@ export async function handleAdminUnlock(params: {
     return unauthorized();
   }
 
-  const passwordOk = await verifyPassword(password, user.passwordHash);
+  const passwordOk = await verifyPassword(
+    password,
+    user.passwordHash
+  );
 
   if (!passwordOk) {
     await recordUnlockFailure({
@@ -145,6 +166,7 @@ export async function handleAdminUnlock(params: {
     return unauthorized("Invalid password");
   }
 
+  // unlock БЕЗ TOTP заборонений
   if (!user.totp?.isEnabled) {
     await recordUnlockFailure({
       ipAddress: params.meta.ipAddress,
@@ -163,7 +185,9 @@ export async function handleAdminUnlock(params: {
     return unauthorized("Valid TOTP code is required");
   }
 
-  const secretBase32 = decryptTotpSecret(user.totp.secretEncrypted);
+  const secretBase32 = decryptTotpSecret(
+    user.totp.secretEncrypted
+  );
 
   const totpOk = verifyTotpCode({
     secretBase32,
@@ -211,6 +235,7 @@ export async function handleAdminLogin(params: {
   }
 
   const body = params.body as Record<string, unknown> | null;
+
   const email = toCleanLowercaseString(body?.email);
   const password = String(body?.password ?? "");
   const totp = toCleanString(body?.totp);
@@ -233,7 +258,9 @@ export async function handleAdminLogin(params: {
   }
 
   const user = await prisma.adminUser.findUnique({
-    where: { email },
+    where: {
+      email,
+    },
     include: {
       totp: true,
       webauthnCredentials: true,
@@ -259,17 +286,26 @@ export async function handleAdminLogin(params: {
     return locked();
   }
 
-  const passwordOk = await verifyPassword(password, user.passwordHash);
+  const passwordOk = await verifyPassword(
+    password,
+    user.passwordHash
+  );
 
   if (!passwordOk) {
     const nextFailures = user.failedLoginAttempts + 1;
+
     const lockedUntil =
       nextFailures >= ACCOUNT_LOCKOUT_THRESHOLD
-        ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000)
+        ? new Date(
+            Date.now() +
+              ACCOUNT_LOCKOUT_MINUTES * 60 * 1000
+          )
         : null;
 
     await prisma.adminUser.update({
-      where: { id: user.id },
+      where: {
+        id: user.id,
+      },
       data: {
         failedLoginAttempts: nextFailures,
         lockedUntil,
@@ -281,41 +317,51 @@ export async function handleAdminLogin(params: {
       email,
     });
 
-    return lockedUntil ? locked() : unauthorized("Invalid credentials");
+    return lockedUntil
+      ? locked()
+      : unauthorized("Invalid credentials");
   }
 
-  if (!user.totp?.isEnabled) {
-    return forbidden("TOTP must be enabled");
-  }
+  // =========================
+  // TOTP OPTIONAL
+  // =========================
 
-  if (!isValidTotpCode(totp)) {
-    await recordLoginFailure({
-      ipAddress: params.meta.ipAddress,
-      email,
+  const isTotpEnabled = Boolean(user.totp?.isEnabled);
+
+  if (isTotpEnabled) {
+    if (!isValidTotpCode(totp)) {
+      await recordLoginFailure({
+        ipAddress: params.meta.ipAddress,
+        email,
+      });
+
+      return unauthorized("TOTP code is required");
+    }
+
+    const secretBase32 = decryptTotpSecret(
+      user.totp!.secretEncrypted
+    );
+
+    const totpOk = verifyTotpCode({
+      secretBase32,
+      token: totp,
+      accountName: user.email,
     });
 
-    return unauthorized("TOTP code is required");
-  }
+    if (!totpOk) {
+      await recordLoginFailure({
+        ipAddress: params.meta.ipAddress,
+        email,
+      });
 
-  const secretBase32 = decryptTotpSecret(user.totp.secretEncrypted);
-
-  const totpOk = verifyTotpCode({
-    secretBase32,
-    token: totp,
-    accountName: user.email,
-  });
-
-  if (!totpOk) {
-    await recordLoginFailure({
-      ipAddress: params.meta.ipAddress,
-      email,
-    });
-
-    return unauthorized("Invalid TOTP code");
+      return unauthorized("Invalid TOTP code");
+    }
   }
 
   await prisma.adminUser.update({
-    where: { id: user.id },
+    where: {
+      id: user.id,
+    },
     data: {
       failedLoginAttempts: 0,
       lockedUntil: null,

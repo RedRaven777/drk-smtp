@@ -1,6 +1,6 @@
 import "server-only";
 
-import { encryptString, decryptString } from "@/lib/crypto";
+import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
 
 export const PENDING_WEBAUTHN_LOGIN_COOKIE = "admin_pending_webauthn_login";
 

@@ -13,8 +13,8 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-import { loginSchema, type LoginFormData } from "@/lib/schemas";
-import { writeAdminTabUnlock } from "@/lib/admin-unlock";
+import { loginSchema, type LoginFormData } from "@/lib/login/login.schema";
+import { writeAdminTabUnlock } from "@/lib/security/security.client";
 import EmailField from "./fields/EmailField";
 import PasswordField from "./fields/PasswordField";
 import TotpField from "./fields/TotpField";
@@ -162,8 +162,6 @@ export default function LoginForm({ isTotpEnabled }: Props) {
         >
           {isSubmitting ? "Logging in..." : "Login"}
         </Button>
-
-        <Link href="/reset-password">Forgot password?</Link>
       </Box>
     </Box>
   );

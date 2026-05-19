@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
-import { requireAdminUser } from "@/lib/auth";
-import { getAllSmtpConfigsForAdmin } from "@/lib/smtp-config";
-import { countAdminSecurityKeys } from "@/lib/bootstrap";
+import { requireAdminUser } from "@/lib/auth/auth.service";
+import { getAllSmtpConfigsForAdmin } from "@/lib/smtp/smtp.service";
+import { countAdminSecurityKeys } from "@/lib/bootstrap/bootstrap.service";
 
 const REQUIRED_SECURITY_KEYS = 2;
 

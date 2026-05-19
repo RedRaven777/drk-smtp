@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import LoginForm from "@/components/forms/LoginForm";
-import { isAppInitialized } from "@/lib/bootstrap";
-import { prisma } from "@/lib/prisma";
+import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
+import { prisma } from "@/lib/prisma/prisma.client";
 
 export default async function HomePage() {
   const initialized = await isAppInitialized();

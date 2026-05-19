@@ -1,15 +1,15 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { encryptString, decryptString } from "@/lib/crypto";
+import { prisma } from "@/lib/prisma/prisma.client";
+import { encryptString, decryptString } from "@/lib/crypto/crypto.service";
 import { auditAction } from "@/lib/audit/audit.service";
 import type { RequestMeta } from "@/lib/api/request";
-import { badRequest, forbidden, ok } from "@/lib/api/response";
+import { badRequest, forbidden, ok } from "@/lib/api/api.response";
 import {
   isValidEmail,
   isValidPort,
   toCleanString,
-} from "@/lib/validation";
+} from "@/lib/validation/validation.service";
 
 const ALLOWED_KEYS = [
   "CAREER",
@@ -22,6 +22,29 @@ type AllowedKey = (typeof ALLOWED_KEYS)[number];
 
 function isAllowedKey(value: string): value is AllowedKey {
   return ALLOWED_KEYS.includes(value as AllowedKey);
+}
+
+export async function getAllSmtpConfigsForAdmin() {
+  const configs = await prisma.smtpConfig.findMany({
+    orderBy: {
+      key: "asc",
+    },
+  });
+
+  return configs.map((config) => ({
+    id: config.id,
+    key: config.key,
+    smtpUser: config.smtpUser,
+    smtpHost: config.smtpHost,
+    smtpPort: config.smtpPort,
+    hasPassword: Boolean(config.smtpPasswordEncrypted),
+    recipient: config.recipientEncrypted
+      ? decryptString(config.recipientEncrypted)
+      : "",
+    hasRecipient: Boolean(config.recipientEncrypted),
+    createdAt: config.createdAt.toISOString(),
+    updatedAt: config.updatedAt.toISOString(),
+  }));
 }
 
 export async function saveSmtpConfig(params: {
