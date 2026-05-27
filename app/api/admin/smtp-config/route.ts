@@ -1,13 +1,15 @@
+import { NextResponse } from "next/server";
 import { withApiSecurity } from "@/lib/api/api.guard";
 import { requireAdminUser } from "@/lib/auth/auth.service";
-import { requireRecentSensitiveAction } from "@/lib/security/sensitive-action.service";
-import { getRequestMeta, readJsonBody } from "@/lib/api/api.request";
-import { forbidden, serverError } from "@/lib/api/api.response";
 import { saveSmtpConfig } from "@/lib/smtp/smtp.service";
+import { requireRecentSensitiveAction } from "@/lib/security/sensitive-action.service";
+import { auditAction } from "@/lib/audit/audit.service";
+import { getRequestMeta } from "@/lib/api/api.request";
 
 async function handler(req: Request) {
   try {
     const user = await requireAdminUser();
+    const meta = getRequestMeta(req);
 
     const allowed = await requireRecentSensitiveAction({
       userId: user.id,
@@ -15,20 +17,54 @@ async function handler(req: Request) {
     });
 
     if (!allowed) {
-      return forbidden("Fresh verification is required");
+      return NextResponse.json(
+        { message: "Fresh verification is required" },
+        { status: 403 }
+      );
     }
 
-    const body = await readJsonBody(req);
-    const meta = getRequestMeta(req);
+    const body = await req.json().catch(() => null);
 
-    return saveSmtpConfig({
+    const key = String(body?.key ?? "").trim();
+    const smtpUser = String(body?.smtpUser ?? "").trim();
+    const password = String(body?.password ?? "");
+    const recipient = String(body?.recipient ?? "").trim();
+    const smtpHost = String(body?.smtpHost ?? "").trim();
+    const smtpPort = Number(body?.smtpPort);
+
+    const saved = await saveSmtpConfig({
       userId: user.id,
-      body,
+      key,
+      smtpUser: smtpUser || undefined,
+      password: password || undefined,
+      recipient: recipient || undefined,
+      smtpHost,
+      smtpPort,
+    });
+
+    await auditAction({
+      actorUserId: user.id,
+      action: "SMTP_CONFIG_UPDATED",
+      targetType: "SmtpConfig",
+      targetId: saved.id,
       meta,
+    });
+
+    return NextResponse.json({
+      message: "SMTP config saved successfully",
     });
   } catch (error) {
     console.error("SMTP CONFIG ERROR:", error);
-    return serverError("Failed to save SMTP config");
+
+    return NextResponse.json(
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to save SMTP config",
+      },
+      { status: 400 }
+    );
   }
 }
 

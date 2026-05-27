@@ -2,26 +2,36 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma/prisma.client";
 import { encryptString, decryptString } from "@/lib/crypto/crypto.service";
-import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/request";
-import { badRequest, forbidden, ok } from "@/lib/api/api.response";
-import {
-  isValidEmail,
-  isValidPort,
-  toCleanString,
-} from "@/lib/validation/validation.service";
 
 const ALLOWED_KEYS = [
   "CAREER",
   "CONTACTS",
   "NEWRECIPE",
   "CONTACTS_POPUP",
+  "MAIN",
 ] as const;
 
 type AllowedKey = (typeof ALLOWED_KEYS)[number];
 
 function isAllowedKey(value: string): value is AllowedKey {
   return ALLOWED_KEYS.includes(value as AllowedKey);
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function maskEmail(value: string | null | undefined) {
+  if (!value) return null;
+
+  const [local, domain] = value.split("@");
+
+  if (!local || !domain) {
+    return "••••";
+  }
+
+  const visibleChars = Math.min(2, local.length);
+  return `${local.slice(0, visibleChars)}***@${domain}`;
 }
 
 export async function getAllSmtpConfigsForAdmin() {
@@ -31,143 +41,124 @@ export async function getAllSmtpConfigsForAdmin() {
     },
   });
 
-  return configs.map((config) => ({
-    id: config.id,
-    key: config.key,
-    smtpUser: config.smtpUser,
-    smtpHost: config.smtpHost,
-    smtpPort: config.smtpPort,
-    hasPassword: Boolean(config.smtpPasswordEncrypted),
-    recipient: config.recipientEncrypted
+  return configs.map((config) => {
+    const recipient = config.recipientEncrypted
       ? decryptString(config.recipientEncrypted)
-      : "",
-    hasRecipient: Boolean(config.recipientEncrypted),
-    createdAt: config.createdAt.toISOString(),
-    updatedAt: config.updatedAt.toISOString(),
-  }));
+      : null;
+
+    return {
+      id: config.id,
+      key: config.key,
+      smtpUserMasked: maskEmail(config.smtpUser),
+      smtpHost: config.smtpHost,
+      smtpPort: config.smtpPort,
+      hasPassword: Boolean(config.smtpPasswordEncrypted),
+      hasRecipient: Boolean(config.recipientEncrypted),
+      recipientMasked: maskEmail(recipient),
+      createdAt: config.createdAt.toISOString(),
+      updatedAt: config.updatedAt.toISOString(),
+    };
+  });
 }
 
 export async function saveSmtpConfig(params: {
   userId: string;
-  body: unknown;
-  meta: RequestMeta;
+  key: string;
+  smtpUser?: string;
+  password?: string;
+  recipient?: string;
+  smtpHost: string;
+  smtpPort: number;
 }) {
-  const body = params.body as Record<string, unknown> | null;
-
-  const key = toCleanString(body?.key);
-  const smtpUser = toCleanString(body?.smtpUser);
-  const currentPassword = String(body?.currentPassword ?? "");
-  const newPassword = String(body?.newPassword ?? "");
-  const currentRecipient = toCleanString(body?.currentRecipient);
-  const newRecipient = toCleanString(body?.newRecipient);
-  const smtpHost = toCleanString(body?.smtpHost);
-  const smtpPort = Number(body?.smtpPort);
+  const key = params.key.trim();
 
   if (!isAllowedKey(key)) {
-    return badRequest("Invalid SMTP config key");
+    throw new Error("Invalid SMTP config key");
   }
 
-  if (!smtpUser || !isValidEmail(smtpUser)) {
-    return badRequest("Valid SMTP user email is required");
-  }
+  const smtpUser = params.smtpUser?.trim().toLowerCase() ?? "";
+  const password = params.password ?? "";
+  const recipient = params.recipient?.trim().toLowerCase() ?? "";
+  const smtpHost = params.smtpHost.trim();
+  const smtpPort = params.smtpPort;
 
   if (!smtpHost) {
-    return badRequest("SMTP host is required");
+    throw new Error("SMTP host is required");
   }
 
-  if (!isValidPort(smtpPort)) {
-    return badRequest("SMTP port must be between 1 and 65535");
+  if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+    throw new Error("SMTP port must be between 1 and 65535");
   }
 
   const existing = await prisma.smtpConfig.findUnique({
-    where: { key },
-  });
-
-  let nextPasswordEncrypted = existing?.smtpPasswordEncrypted ?? null;
-  let nextRecipientEncrypted = existing?.recipientEncrypted ?? null;
-
-  if (existing?.smtpPasswordEncrypted) {
-    if (newPassword) {
-      if (!currentPassword) {
-        return badRequest("Current SMTP password is required");
-      }
-
-      const decryptedCurrentPassword = decryptString(
-        existing.smtpPasswordEncrypted
-      );
-
-      if (decryptedCurrentPassword !== currentPassword) {
-        return forbidden("Current SMTP password is incorrect");
-      }
-
-      nextPasswordEncrypted = encryptString(newPassword);
-    }
-  } else {
-    if (!newPassword) {
-      return badRequest("SMTP password is required");
-    }
-
-    nextPasswordEncrypted = encryptString(newPassword);
-  }
-
-  if (existing?.recipientEncrypted) {
-    if (newRecipient) {
-      if (!currentRecipient) {
-        return badRequest("Current recipient is required");
-      }
-
-      const decryptedCurrentRecipient = decryptString(
-        existing.recipientEncrypted
-      );
-
-      if (decryptedCurrentRecipient !== currentRecipient) {
-        return forbidden("Current recipient is incorrect");
-      }
-
-      if (!isValidEmail(newRecipient)) {
-        return badRequest("Valid new recipient email is required");
-      }
-
-      nextRecipientEncrypted = encryptString(newRecipient);
-    }
-  } else {
-    if (!newRecipient || !isValidEmail(newRecipient)) {
-      return badRequest("Valid recipient email is required");
-    }
-
-    nextRecipientEncrypted = encryptString(newRecipient);
-  }
-
-  const saved = await prisma.smtpConfig.upsert({
-    where: { key },
-    update: {
-      smtpUser,
-      smtpPasswordEncrypted: nextPasswordEncrypted,
-      recipientEncrypted: nextRecipientEncrypted,
-      smtpHost,
-      smtpPort,
-      updatedByUserId: params.userId,
-    },
-    create: {
+    where: {
       key,
-      smtpUser,
-      smtpPasswordEncrypted: nextPasswordEncrypted,
-      recipientEncrypted: nextRecipientEncrypted,
-      smtpHost,
-      smtpPort,
-      updatedByUserId: params.userId,
     },
   });
 
-  await auditAction({
-    actorUserId: params.userId,
-    action: "SMTP_CONFIG_UPDATED",
-    targetType: "SmtpConfig",
-    targetId: saved.id,
-    meta: params.meta,
-  });
+  if (!existing) {
+    if (!smtpUser || !isValidEmail(smtpUser)) {
+      throw new Error("Valid SMTP user email is required");
+    }
 
-  return ok({
-    message: "SMTP config saved successfully",
+    if (!password) {
+      throw new Error("SMTP password is required");
+    }
+
+    if (!recipient || !isValidEmail(recipient)) {
+      throw new Error("Valid recipient email is required");
+    }
+
+    return prisma.smtpConfig.create({
+      data: {
+        key,
+        smtpUser,
+        smtpPasswordEncrypted: encryptString(password),
+        recipientEncrypted: encryptString(recipient),
+        smtpHost,
+        smtpPort,
+        updatedByUserId: params.userId,
+      },
+    });
+  }
+
+  const nextData: {
+    smtpUser?: string;
+    smtpPasswordEncrypted?: string;
+    recipientEncrypted?: string;
+    smtpHost: string;
+    smtpPort: number;
+    updatedByUserId: string;
+  } = {
+    smtpHost,
+    smtpPort,
+    updatedByUserId: params.userId,
+  };
+
+  if (smtpUser) {
+    if (!isValidEmail(smtpUser)) {
+      throw new Error("Valid SMTP user email is required");
+    }
+
+    nextData.smtpUser = smtpUser;
+  }
+
+  if (password) {
+    nextData.smtpPasswordEncrypted = encryptString(password);
+  }
+
+  if (recipient) {
+    if (!isValidEmail(recipient)) {
+      throw new Error("Valid recipient email is required");
+    }
+
+    nextData.recipientEncrypted = encryptString(recipient);
+  }
+
+  return prisma.smtpConfig.update({
+    where: {
+      key,
+    },
+    data: nextData,
   });
 }

@@ -1,20 +1,10 @@
-import { redirect } from "next/navigation";
 import SecurityClient from "./SecurityClient";
-import { requireAdminUser } from "@/lib/auth/auth.service";
 import { prisma } from "@/lib/prisma/prisma.client";
-import { countAdminSecurityKeys } from "@/lib/bootstrap/bootstrap.service";
+import { requireReadyAdminPage } from "@/lib/auth/admin-page.guard";
 import { listWebAuthnCredentialsForAdmin } from "@/lib/admin-webauthn/admin-webauthn.service";
 
-const REQUIRED_SECURITY_KEYS = 2;
-
 export default async function SecurityPage() {
-  const user = await requireAdminUser();
-
-  const keyCount = await countAdminSecurityKeys(user.id);
-
-  if (keyCount < REQUIRED_SECURITY_KEYS) {
-    redirect("/setup/security-key");
-  }
+  const { user, requiredSecurityKeys } = await requireReadyAdminPage();
 
   const [totpRecord, webauthnCredentials] = await Promise.all([
     prisma.adminTotp.findUnique({
@@ -33,7 +23,7 @@ export default async function SecurityPage() {
         createdAt: item.createdAt.toISOString(),
         lastUsedAt: item.lastUsedAt ? item.lastUsedAt.toISOString() : null,
       }))}
-      minimumSecurityKeys={REQUIRED_SECURITY_KEYS}
+      minimumSecurityKeys={requiredSecurityKeys}
     />
   );
 }

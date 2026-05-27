@@ -17,6 +17,10 @@ const navItems = [
     label: "Security",
     href: "/admin/security",
   },
+  {
+    label: "Smtp",
+    href: "/admin/smtp",
+  },
 ];
 
 export default function AdminSidebar({ onLogout }: Props) {

@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSessionByToken, getSessionCookieName } from "@/lib/session/session.service";
+import { unauthorized } from "@/lib/api/api.response";
 
 export async function getCurrentAdminUser() {
   const cookieStore = await cookies();
@@ -33,4 +34,20 @@ export async function requireAdminUser() {
   }
 
   return user;
+}
+
+export async function requireAdminUserOr401() {
+  const user = await getCurrentAdminUser();
+
+  if (!user) {
+    return {
+      user: null,
+      response: unauthorized(),
+    };
+  }
+
+  return {
+    user,
+    response: null,
+  };
 }
