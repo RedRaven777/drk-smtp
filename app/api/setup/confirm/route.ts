@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma/prisma.client";
 import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
-import { initialSetupConfirmSchema } from "@/lib/schemas";
-import { parsePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup";
+import { initialSetupConfirmSchema } from "@/lib/setup/setup.schema";
+
+import { parsePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup/setup.service";
 import { encryptTotpSecret, verifyTotpCode } from "@/lib/totp/totp.service";
 import { createSession, getSessionCookieName } from "@/lib/session/session.service";
 
@@ -54,10 +55,14 @@ export async function POST(req: Request) {
 		}
 
 		const created = await prisma.$transaction(async (tx) => {
-			const existingAdminCount = await tx.adminUser.count();
+			const existingAdmin = await tx.adminUser.findFirst({
+			  select: {
+			    id: true,
+			  },
+			});
 
-			if (existingAdminCount > 0) {
-				throw new Error("Application is already initialized");
+			if (existingAdmin) {
+			  throw new Error("Application is already initialized");
 			}
 
 			const user = await tx.adminUser.create({
@@ -96,7 +101,7 @@ export async function POST(req: Request) {
 			userId: created.id,
 			userAgent,
 			ipAddress,
-			ttlSeconds: 60 * 30,
+			idleTtlSeconds: 60 * 30,
 		});
 
 		const res = NextResponse.json({

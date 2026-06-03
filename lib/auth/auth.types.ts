@@ -1,4 +1,4 @@
-import type { Prisma } from "@/app/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 
 export type CurrentAdminUser = Prisma.AdminUserGetPayload<{}>;
 

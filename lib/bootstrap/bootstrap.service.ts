@@ -3,20 +3,24 @@ import "server-only";
 import { prisma } from "@/lib/prisma/prisma.client";
 
 export async function isAppInitialized(): Promise<boolean> {
-  const adminCount = await prisma.adminUser.count();
-  return adminCount > 0;
+  const admin = await prisma.adminUser.findFirst({
+    select: {
+      id: true,
+    },
+  });
+
+  return Boolean(admin);
 }
 
 export async function countAdminSecurityKeys(userId: string): Promise<number> {
-  return prisma.adminWebAuthnCredential.count({
-    where: { userId },
+  const keys = await prisma.adminWebAuthnCredential.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      id: true,
+    },
   });
-}
 
-export async function doesAdminHaveMinimumSecurityKeys(
-  userId: string,
-  minimum = 2
-): Promise<boolean> {
-  const count = await countAdminSecurityKeys(userId);
-  return count >= minimum;
+  return keys.length;
 }

@@ -21,7 +21,7 @@ import {
   createSession,
   getSessionCookieName,
 } from "@/lib/session/session.service";
-import type { RequestMeta } from "@/lib/api/request";
+import type { RequestMeta } from "@/lib/api/api.request";
 import {
   forbidden,
   locked,

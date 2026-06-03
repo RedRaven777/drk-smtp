@@ -8,7 +8,6 @@ const ALLOWED_KEYS = [
   "CONTACTS",
   "NEWRECIPE",
   "CONTACTS_POPUP",
-  "MAIN",
 ] as const;
 
 type AllowedKey = (typeof ALLOWED_KEYS)[number];

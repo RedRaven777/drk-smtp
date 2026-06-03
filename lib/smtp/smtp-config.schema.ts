@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SmtpConfigKey } from "@/app/generated/prisma/client";
+import { SmtpConfigKey } from "@prisma/client";
 
 export const smtpConfigKeySchema = z.nativeEnum(SmtpConfigKey);
 

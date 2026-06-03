@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma/prisma.client";
 import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
-import { SmtpConfigKey } from "@/app/generated/prisma/client";
+import { SmtpConfigKey } from "@prisma/client";
 
 export type SmtpConfigInput = {
   key: SmtpConfigKey;

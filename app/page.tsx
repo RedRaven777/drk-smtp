@@ -3,6 +3,8 @@ import LoginForm from "@/components/forms/LoginForm";
 import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
 import { prisma } from "@/lib/prisma/prisma.client";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const initialized = await isAppInitialized();
 

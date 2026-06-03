@@ -9,8 +9,9 @@ import {
 } from "@/lib/login/pending-webauthn-login.service";
 import { clearUnlockFailures, recordUnlockFailure } from "@/lib/rate-limit/rate-limit.service";
 import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/request";
+import type { RequestMeta } from "@/lib/api/api.request";
 import { badRequest, ok, unauthorized } from "@/lib/api/api.response";
+import type { WebAuthnAuthenticationResponseJSON } from "@/lib/webauthn/webauthn.types";
 
 export async function verifyPendingWebAuthnLogin(params: {
   body: unknown;
@@ -25,8 +26,13 @@ export async function verifyPendingWebAuthnLogin(params: {
 
   const pending = parsePendingWebAuthnLogin(pendingCookie);
   const body = params.body as Record<string, unknown> | null;
-  const response = body?.response;
-  const unlockOnly = Boolean(body?.unlockOnly);
+  const parsedBody = body as {
+    response?: WebAuthnAuthenticationResponseJSON;
+    unlockOnly?: boolean;
+  };
+
+  const response = parsedBody.response;
+  const unlockOnly = Boolean(parsedBody.unlockOnly);
 
   if (!response) {
     if (unlockOnly) {

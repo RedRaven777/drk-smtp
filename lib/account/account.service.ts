@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma/prisma.client";
 import { hashPassword } from "@/lib/password/password.service";
 import { getSessionCookieName } from "@/lib/session/session.service";
 import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/api.response";
+import type { RequestMeta } from "@/lib/api/api.request";
+
 import {
   isValidEmail,
   toCleanLowercaseString,

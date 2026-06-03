@@ -29,50 +29,45 @@ function isValidFormApiKey(req: Request) {
 }
 
 function isValidFormSource(req: Request) {
-  const source =
-    req.headers.get("x-form-source") ?? "";
+  const source = req.headers.get("x-form-source") ?? "";
 
-  return FORM_ALLOWED_SOURCES.includes(
-    source
-  );
+  return FORM_ALLOWED_SOURCES.includes(source);
 }
+
+type PublicFormVerificationResult =
+  | {
+      ok: true;
+      request: Request;
+    }
+  | {
+      ok: false;
+      response: Response;
+    };
 
 async function verifyRequestSignature(
   req: Request
-) {
+): Promise<PublicFormVerificationResult> {
   const timestamp =
-    req.headers.get(
-      "x-form-timestamp"
-    ) ?? "";
+    req.headers.get("x-form-timestamp") ?? "";
 
   const nonce =
-    req.headers.get(
-      "x-form-nonce"
-    ) ?? "";
+    req.headers.get("x-form-nonce") ?? "";
 
   const signature =
-    req.headers.get(
-      "x-form-signature"
-    ) ?? "";
+    req.headers.get("x-form-signature") ?? "";
 
-  const timestampNumber =
-    Number(timestamp);
+  const timestampNumber = Number(timestamp);
 
   if (
-    !Number.isFinite(
-      timestampNumber
-    ) ||
-    Math.abs(
-      Date.now() - timestampNumber
-    ) >
+    !Number.isFinite(timestampNumber) ||
+    Math.abs(Date.now() - timestampNumber) >
       FORM_SIGNATURE_MAX_SKEW_MS
   ) {
     return {
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Expired request",
+          message: "Expired request",
         },
         {
           status: 401,
@@ -81,16 +76,12 @@ async function verifyRequestSignature(
     };
   }
 
-  if (
-    !nonce ||
-    nonce.length < 10
-  ) {
+  if (!nonce || nonce.length < 10) {
     return {
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Invalid nonce",
+          message: "Invalid nonce",
         },
         {
           status: 401,
@@ -109,8 +100,7 @@ async function verifyRequestSignature(
       timestamp,
       nonce,
       secret:
-        process.env
-          .PUBLIC_FORM_API_KEY!,
+        process.env.PUBLIC_FORM_API_KEY!,
     });
 
   if (
@@ -124,8 +114,7 @@ async function verifyRequestSignature(
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Invalid signature",
+          message: "Invalid signature",
         },
         {
           status: 401,
@@ -136,27 +125,23 @@ async function verifyRequestSignature(
 
   return {
     ok: true,
-    request: new Request(
-      req.url,
-      {
-        method: req.method,
-        headers: req.headers,
-        body: bodyBuffer,
-      }
-    ),
+    request: new Request(req.url, {
+      method: req.method,
+      headers: req.headers,
+      body: bodyBuffer,
+    }),
   };
 }
 
 async function assertPublicFormRequest(
   req: Request
-) {
+): Promise<PublicFormVerificationResult> {
   if (req.method !== "POST") {
     return {
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Method not allowed",
+          message: "Method not allowed",
         },
         {
           status: 405,
@@ -165,15 +150,12 @@ async function assertPublicFormRequest(
     };
   }
 
-  if (
-    !isValidFormApiKey(req)
-  ) {
+  if (!isValidFormApiKey(req)) {
     return {
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Unauthorized",
+          message: "Unauthorized",
         },
         {
           status: 401,
@@ -182,15 +164,12 @@ async function assertPublicFormRequest(
     };
   }
 
-  if (
-    !isValidFormSource(req)
-  ) {
+  if (!isValidFormSource(req)) {
     return {
       ok: false,
       response: NextResponse.json(
         {
-          message:
-            "Forbidden source",
+          message: "Forbidden source",
         },
         {
           status: 403,
@@ -199,9 +178,7 @@ async function assertPublicFormRequest(
     };
   }
 
-  return verifyRequestSignature(
-    req
-  );
+  return verifyRequestSignature(req);
 }
 
 export function withApiSecurity(
@@ -223,15 +200,13 @@ export function withApiSecurity(
             req
           );
 
-        if (
-          !verification.ok
-        ) {
-          return verification.response;
+        if (verification.ok) {
+          return handler(
+            verification.request
+          );
         }
 
-        return handler(
-          verification.request
-        );
+        return verification.response;
       }
 
       assertSameOrigin(req);

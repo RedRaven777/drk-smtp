@@ -11,7 +11,7 @@ enum SmtpConfigKey {
 	CONTACTS
 	NEWRECIPE
 	CONTACTS_POPUP
-	MAIN
+
 }
 
 model AdminUser {

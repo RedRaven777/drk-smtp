@@ -12,6 +12,13 @@ import {
 import { requireRecentSensitiveAction } from "@/lib/security/sensitive-action.service";
 import { toCleanString } from "@/lib/validation/validation.service";
 
+type VerifyWebAuthnRegistrationParams = Parameters<
+  typeof verifyWebAuthnRegistration
+>[0];
+
+type WebAuthnRegistrationResponse =
+  VerifyWebAuthnRegistrationParams["response"];
+
 const SETUP_REQUIRED_KEYS = 2;
 const MINIMUM_REMAINING_KEYS = 1;
 
@@ -58,11 +65,16 @@ export async function deleteWebAuthnCredential(params: {
     throw new WebAuthnAdminError("Security key not found");
   }
 
-  const totalCount = await prisma.adminWebAuthnCredential.count({
-    where: { userId: params.userId },
+  const credentials = await prisma.adminWebAuthnCredential.findMany({
+    where: {
+      userId: params.userId,
+    },
+    select: {
+      id: true,
+    },
   });
 
-  if (totalCount - 1 < minimumRemaining) {
+  if (credentials.length - 1 < minimumRemaining) {
     throw new WebAuthnAdminError(
       `At least ${minimumRemaining} security keys must remain registered`
     );
@@ -247,7 +259,11 @@ export async function verifyAdminWebAuthnRegistration(params: {
     return forbidden("Fresh verification is required");
   }
 
-  const body = params.body as Record<string, unknown> | null;
+  const body = params.body as {
+    response?: WebAuthnRegistrationResponse;
+    name?: unknown;
+  } | null;
+
   const response = body?.response;
   const name = typeof body?.name === "string" ? body.name : null;
 

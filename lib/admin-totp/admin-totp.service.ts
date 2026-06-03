@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma/prisma.client";
 import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/request";
+import type { RequestMeta } from "@/lib/api/api.request";
 import { badRequest, ok } from "@/lib/api/api.response";
 import { decryptString, encryptString } from "@/lib/crypto/crypto.service";
 import {

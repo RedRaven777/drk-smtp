@@ -3,9 +3,9 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma/prisma.client";
 import { hashPassword } from "@/lib/password/password.service";
 import { isAppInitialized } from "@/lib/bootstrap/bootstrap.service";
-import { initialSetupStartSchema } from "@/lib/schemas";
+import { initialSetupStartSchema } from "@/lib/setup/setup.schema";
 import { generateTotpSecret, generateTotpSetup } from "@/lib/totp/totp.service";
-import { serializePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup";
+import { serializePendingSetup, SETUP_COOKIE_NAME } from "@/lib/setup/setup.service";
 
 export async function POST(req: Request) {
 	try {

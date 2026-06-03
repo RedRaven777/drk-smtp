@@ -15,9 +15,19 @@ import type {
 } from "@simplewebauthn/server";
 import { prisma } from "@/lib/prisma/prisma.client";
 
-const rpName = process.env.WEBAUTHN_RP_NAME;
-const rpID = process.env.WEBAUTHN_RP_ID;
-const origin = process.env.WEBAUTHN_ORIGIN;
+function getRequiredEnv(name: string) {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(`${name} is required`);
+  }
+
+  return value;
+}
+
+const rpName = getRequiredEnv("WEBAUTHN_RP_NAME");
+const rpID = getRequiredEnv("WEBAUTHN_RP_ID");
+const origin = getRequiredEnv("WEBAUTHN_ORIGIN");
 
 if (!rpName || !rpID || !origin) {
   throw new Error(

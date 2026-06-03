@@ -5,7 +5,6 @@ import {
   Box,
   Card,
   CardContent,
-  Grid,
   Stack,
   Typography,
 } from "@mui/material";
@@ -41,46 +40,52 @@ export default function DashboardClient() {
             </Typography>
           </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    Login Activity
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800}>
-                    Coming soon
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(3, 1fr)",
+              },
+              gap: 2,
+            }}
+          >
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  Login Activity
+                </Typography>
 
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    Security Events
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800}>
-                    Coming soon
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+                <Typography variant="h5" fontWeight={800}>
+                  Coming soon
+                </Typography>
+              </CardContent>
+            </Card>
 
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    SMTP Status
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800}>
-                    Coming soon
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  Security Events
+                </Typography>
+
+                <Typography variant="h5" fontWeight={800}>
+                  Coming soon
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  SMTP Status
+                </Typography>
+
+                <Typography variant="h5" fontWeight={800}>
+                  Coming soon
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
         </Stack>
       </AdminShell>
     </AdminTabGuard>

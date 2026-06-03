@@ -18,6 +18,11 @@ type SetupStartResponse = {
   email: string;
 };
 
+type ApiErrorResponse = {
+  message?: string;
+  errors?: unknown;
+};
+
 export default function InitialSetupForm() {
   const router = useRouter();
 
@@ -53,14 +58,21 @@ export default function InitialSetupForm() {
         }),
       });
 
-      const json =
-        (await res.json().catch(() => null)) as
-          | SetupStartResponse
-          | { message?: string }
-          | null;
+      const json = (await res.json().catch(() => null)) as
+        | SetupStartResponse
+        | ApiErrorResponse
+        | null;
 
       if (!res.ok) {
-        setError(json?.message ?? "Failed to start setup");
+        setError(
+          typeof json === "object" &&
+            json !== null &&
+            "message" in json &&
+            typeof json.message === "string"
+            ? json.message
+            : "Failed to start setup"
+        );
+
         return;
       }
 

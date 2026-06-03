@@ -20,9 +20,10 @@ import {
   recordReauthFailure,
 } from "@/lib/rate-limit/rate-limit.service";
 import { auditAction } from "@/lib/audit/audit.service";
-import type { RequestMeta } from "@/lib/api/request";
+import type { RequestMeta } from "@/lib/api/api.request";
 import { badRequest, forbidden, ok, tooManyRequests, unauthorized } from "@/lib/api/api.response";
 import { isValidTotpCode, toCleanString } from "@/lib/validation/validation.service";
+import type { WebAuthnAuthenticationResponseJSON } from "@/lib/webauthn/webauthn.types";
 
 export async function startSensitiveReauth(params: {
   userId: string;
@@ -215,7 +216,11 @@ export async function verifySensitiveReauth(params: {
   }
 
   const body = params.body as Record<string, unknown> | null;
-  const response = body?.response;
+  const parsedBody = body as {
+    response?: WebAuthnAuthenticationResponseJSON;
+  };
+
+  const response = parsedBody.response;
 
   if (!response) {
     await recordReauthFailure({
