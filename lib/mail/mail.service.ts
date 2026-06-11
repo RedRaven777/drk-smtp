@@ -3,13 +3,12 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma/prisma.client";
 import { decryptString } from "@/lib/crypto/crypto.service";
+
 import type {
   MailAttachment,
   PublicFormSmtpKey,
   SendMailParams,
 } from "@/lib/mail/mail.types";
-
-const transporterCache = new Map<PublicFormSmtpKey, Awaited<ReturnType<typeof createMailer>>>();
 
 async function createMailer(key: PublicFormSmtpKey) {
   const config = await prisma.smtpConfig.findUnique({
@@ -49,16 +48,7 @@ async function createMailer(key: PublicFormSmtpKey) {
 }
 
 export async function getMailerByKey(key: PublicFormSmtpKey) {
-  const cached = transporterCache.get(key);
-
-  if (cached) {
-    return cached;
-  }
-
-  const mailer = await createMailer(key);
-  transporterCache.set(key, mailer);
-
-  return mailer;
+  return createMailer(key);
 }
 
 export async function buildAttachments(files: File[]): Promise<MailAttachment[]> {
