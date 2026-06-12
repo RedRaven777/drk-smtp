@@ -10,10 +10,6 @@ type Props = {
 
 const navItems = [
   {
-    label: "Dashboard",
-    href: "/admin/dashboard",
-  },
-  {
     label: "Security",
     href: "/admin/security",
   },

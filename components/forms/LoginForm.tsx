@@ -87,7 +87,7 @@ export default function LoginForm({ isTotpEnabled }: Props) {
 
         writeAdminTabUnlock();
 
-        router.replace("/admin/dashboard");
+        router.replace("/admin/smtp");
         router.refresh();
         return;
       } catch {

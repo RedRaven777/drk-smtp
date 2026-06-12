@@ -13,7 +13,7 @@ export function middleware(req: NextRequest) {
   }
 
   if (url.pathname === "/" && sessionToken) {
-    url.pathname = "/admin/dashboard";
+    url.pathname = "/admin/smtp";
     return NextResponse.redirect(url);
   }
 

@@ -105,7 +105,7 @@ export default function SetupSecurityKeyForm({
       router.refresh();
 
       if (nextCount >= requiredCount) {
-        router.replace("/admin/dashboard");
+        router.replace("/admin/smtp");
       }
     } catch {
       setError("Security key registration was cancelled or failed");

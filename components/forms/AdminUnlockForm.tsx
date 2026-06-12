@@ -18,7 +18,7 @@ import { writeAdminTabUnlock } from "@/lib/security/admin-unlock.service";
 export default function AdminUnlockForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/admin/dashboard";
+  const nextPath = searchParams.get("next") || "/admin/smtp";
 
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
