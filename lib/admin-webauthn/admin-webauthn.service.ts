@@ -55,7 +55,7 @@ export async function deleteWebAuthnCredential(params: {
   credentialId: string;
   minimumRemaining?: number;
 }) {
-  const minimumRemaining = params.minimumRemaining ?? 2;
+  const minimumRemaining = params.minimumRemaining ?? MINIMUM_REMAINING_KEYS;
 
   const credential = await prisma.adminWebAuthnCredential.findUnique({
     where: { id: params.credentialId },
@@ -76,7 +76,7 @@ export async function deleteWebAuthnCredential(params: {
 
   if (credentials.length - 1 < minimumRemaining) {
     throw new WebAuthnAdminError(
-      `At least ${minimumRemaining} security keys must remain registered`
+      `At least ${minimumRemaining} security key must remain registered`
     );
   }
 
@@ -178,16 +178,41 @@ export async function removeAdminSecurityKey(params: {
       minimumRemaining: MINIMUM_REMAINING_KEYS,
     });
 
+    const remainingKeys = await prisma.adminWebAuthnCredential.findMany({
+      where: {
+        userId: params.userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const shouldRevokeSessions = remainingKeys.length < SETUP_REQUIRED_KEYS;
+
+    if (shouldRevokeSessions) {
+      await prisma.adminSession.deleteMany({
+        where: {
+          userId: params.userId,
+        },
+      });
+    }
+
     await auditAction({
       actorUserId: params.userId,
-      action: "WEBAUTHN_REMOVED",
+      action: shouldRevokeSessions
+        ? "WEBAUTHN_REMOVED_SESSION_REVOKED"
+        : "WEBAUTHN_REMOVED",
       targetType: "AdminWebAuthnCredential",
       targetId: deleted.id,
       meta: params.meta,
     });
 
     return ok({
-      message: "Security key removed",
+      message: shouldRevokeSessions
+        ? "Security key removed. Please sign in again."
+        : "Security key removed",
+      sessionRevoked: shouldRevokeSessions,
+      remainingSecurityKeys: remainingKeys.length,
     });
   } catch (error) {
     if (error instanceof WebAuthnAdminError) {

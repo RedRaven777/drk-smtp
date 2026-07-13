@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -41,22 +42,41 @@ export default function WebAuthnManagementForm({
   minimumKeys,
   totpEnabled,
 }: Props) {
+  const router = useRouter();
+
   const [credentials, setCredentials] =
     useState<CredentialItem[]>(initialCredentials);
+
   const [keyName, setKeyName] = useState("");
-  const [renameValues, setRenameValues] = useState<Record<string, string>>({});
+
+  const [renameValues, setRenameValues] =
+    useState<Record<string, string>>({});
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
   const [isRegistering, setIsRegistering] = useState(false);
-  const [busyCredentialId, setBusyCredentialId] = useState<string | null>(null);
+
+  const [busyCredentialId, setBusyCredentialId] =
+    useState<string | null>(null);
+
   const [reauthOpen, setReauthOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+
+  const [pendingAction, setPendingAction] =
+    useState<PendingAction>(null);
+
+  const [registrationAuthorized, setRegistrationAuthorized] =
+    useState(false);
 
   useEffect(() => {
     setCredentials(initialCredentials);
+
     setRenameValues(
       Object.fromEntries(
-        initialCredentials.map((item) => [item.id, item.name ?? ""])
+        initialCredentials.map((item) => [
+          item.id,
+          item.name ?? "",
+        ])
       )
     );
   }, [initialCredentials]);
@@ -69,31 +89,57 @@ export default function WebAuthnManagementForm({
     const json = await res.json().catch(() => null);
 
     if (!res.ok || !json?.credentials) {
-      throw new Error(json?.message ?? "Failed to refresh security keys");
+      throw new Error(
+        json?.message ?? "Failed to refresh security keys"
+      );
     }
 
     setCredentials(json.credentials);
+
     setRenameValues(
       Object.fromEntries(
-        json.credentials.map((item: CredentialItem) => [item.id, item.name ?? ""])
+        json.credentials.map((item: CredentialItem) => [
+          item.id,
+          item.name ?? "",
+        ])
       )
     );
   };
 
   const doRegisterKey = async () => {
+    if (!registrationAuthorized) {
+      setError(
+        "Confirm this action with an existing security key first"
+      );
+      return;
+    }
+
+    if (!keyName.trim()) {
+      setError("Security key name is required");
+      return;
+    }
+
     setError("");
     setMessage("");
     setIsRegistering(true);
 
     try {
-      const optionsRes = await fetch("/api/webauthn/register/options", {
-        method: "POST",
-      });
+      const optionsRes = await fetch(
+        "/api/webauthn/register/options",
+        {
+          method: "POST",
+        }
+      );
 
-      const optionsJson = await optionsRes.json().catch(() => null);
+      const optionsJson = await optionsRes
+        .json()
+        .catch(() => null);
 
       if (!optionsRes.ok || !optionsJson?.options) {
-        setError(optionsJson?.message ?? "Failed to create registration options");
+        setError(
+          optionsJson?.message ??
+            "Failed to create registration options"
+        );
         return;
       }
 
@@ -101,36 +147,74 @@ export default function WebAuthnManagementForm({
         optionsJSON: optionsJson.options,
       });
 
-      const verifyRes = await fetch("/api/webauthn/register/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          response: attResp,
-          name: keyName,
-        }),
-      });
+      const verifyRes = await fetch(
+        "/api/webauthn/register/verify",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            response: attResp,
+            name: keyName.trim(),
+          }),
+        }
+      );
 
-      const verifyJson = await verifyRes.json().catch(() => null);
+      const verifyJson = await verifyRes
+        .json()
+        .catch(() => null);
 
       if (!verifyRes.ok) {
-        setError(verifyJson?.message ?? "Failed to register security key");
+        setError(
+          verifyJson?.message ??
+            "Failed to register security key"
+        );
         return;
       }
 
       setKeyName("");
+      setRegistrationAuthorized(false);
       setMessage("Security key registered successfully");
+
       await refreshCredentials();
-    } catch {
-      setError("Security key registration was cancelled or failed");
+    } catch (registrationError) {
+      console.error(
+        "SECURITY KEY REGISTRATION ERROR:",
+        registrationError
+      );
+
+      if (
+        registrationError instanceof DOMException &&
+        registrationError.name === "InvalidStateError"
+      ) {
+        setError(
+          "This security key is already registered. Insert a different security key."
+        );
+        return;
+      }
+
+      if (
+        registrationError instanceof DOMException &&
+        registrationError.name === "NotAllowedError"
+      ) {
+        setError(
+          "Security key registration was cancelled or timed out"
+        );
+        return;
+      }
+
+      setError(
+        "Security key registration was cancelled or failed"
+      );
     } finally {
       setIsRegistering(false);
     }
   };
 
   const doRename = async (credentialId: string) => {
-    const name = (renameValues[credentialId] ?? "").trim();
+    const name =
+      (renameValues[credentialId] ?? "").trim();
 
     if (!name) {
       setError("Key name is required");
@@ -156,11 +240,15 @@ export default function WebAuthnManagementForm({
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(json?.message ?? "Failed to rename security key");
+        setError(
+          json?.message ??
+            "Failed to rename security key"
+        );
         return;
       }
 
       setMessage("Security key renamed");
+
       await refreshCredentials();
     } catch {
       setError("Failed to rename security key");
@@ -188,11 +276,27 @@ export default function WebAuthnManagementForm({
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(json?.message ?? "Failed to remove security key");
+        setError(
+          json?.message ??
+            "Failed to remove security key"
+        );
         return;
       }
 
-      setMessage("Security key removed");
+      setMessage(
+        json?.message ?? "Security key removed"
+      );
+
+      if (json?.sessionRevoked) {
+        await fetch("/api/logout", {
+          method: "POST",
+        });
+
+        router.replace("/");
+        router.refresh();
+        return;
+      }
+
       await refreshCredentials();
     } catch {
       setError("Failed to remove security key");
@@ -203,35 +307,78 @@ export default function WebAuthnManagementForm({
 
   const openReauthFor = (action: PendingAction) => {
     if (!totpEnabled) {
-      setError("Enable TOTP first before managing security keys");
+      setError(
+        "Enable TOTP first before managing security keys"
+      );
       return;
     }
 
+    if (
+      action?.type === "register" &&
+      !keyName.trim()
+    ) {
+      setError(
+        "Enter a name for the new security key first"
+      );
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setRegistrationAuthorized(false);
     setPendingAction(action);
     setReauthOpen(true);
   };
 
   const handleVerified = async () => {
-    if (!pendingAction) return;
-
-    if (pendingAction.type === "register") {
-      await doRegisterKey();
+    if (!pendingAction) {
       return;
     }
 
-    if (pendingAction.type === "rename") {
-      await doRename(pendingAction.credentialId);
+    const action = pendingAction;
+
+    setReauthOpen(false);
+    setPendingAction(null);
+
+    if (action.type === "register") {
+      setRegistrationAuthorized(true);
+
+      setMessage(
+        "Verification completed. Remove the existing security key, insert the new security key, then click Continue registration."
+      );
+
       return;
     }
 
-    if (pendingAction.type === "delete") {
-      await doDelete(pendingAction.credentialId);
+    if (action.type === "rename") {
+      await doRename(action.credentialId);
+      return;
+    }
+
+    if (action.type === "delete") {
+      await doDelete(action.credentialId);
     }
   };
 
+  const cancelRegistration = () => {
+    setRegistrationAuthorized(false);
+    setMessage("");
+    setError("");
+  };
+
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-      <Typography variant="h6" fontWeight={700} mb={2}>
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        borderRadius: 3,
+      }}
+    >
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        mb={2}
+      >
         YubiKey / Security Keys
       </Typography>
 
@@ -240,49 +387,126 @@ export default function WebAuthnManagementForm({
       <Stack spacing={2}>
         {!totpEnabled ? (
           <Alert severity="warning">
-            TOTP must be enabled before you can add, rename, or remove security keys.
+            TOTP must be enabled before you can add,
+            rename, or remove security keys.
           </Alert>
         ) : (
-          <Alert severity={credentials.length >= minimumKeys ? "success" : "warning"}>
-            Registered keys: <strong>{credentials.length}</strong>. Minimum required:{" "}
+          <Alert
+            severity={
+              credentials.length >= minimumKeys
+                ? "success"
+                : "warning"
+            }
+          >
+            Registered keys:{" "}
+            <strong>{credentials.length}</strong>.
+            Minimum required:{" "}
             <strong>{minimumKeys}</strong>.
           </Alert>
         )}
 
         <Typography variant="body2">
-          To add, rename, or remove a key, you must re-enter your password, TOTP,
-          and confirm with a working security key.
+          To add, rename, or remove a key, you must
+          re-enter your password, TOTP, and confirm
+          with a working registered security key.
         </Typography>
 
         <TextField
           label="New key name"
           placeholder="Example: Backup YubiKey"
           value={keyName}
-          onChange={(e) => setKeyName(e.target.value)}
+          onChange={(event) =>
+            setKeyName(event.target.value)
+          }
           fullWidth
-          disabled={!totpEnabled}
+          disabled={
+            !totpEnabled ||
+            isRegistering ||
+            registrationAuthorized
+          }
         />
 
-        <Box>
-          <Button
-            variant="contained"
-            onClick={() => openReauthFor({ type: "register" })}
-            disabled={isRegistering || !totpEnabled}
+        {!registrationAuthorized ? (
+          <Box>
+            <Button
+              variant="contained"
+              onClick={() =>
+                openReauthFor({
+                  type: "register",
+                })
+              }
+              disabled={
+                isRegistering ||
+                !totpEnabled ||
+                !keyName.trim()
+              }
+            >
+              Confirm New Security Key
+            </Button>
+          </Box>
+        ) : (
+          <Stack
+            spacing={1.5}
+            alignItems="flex-start"
           >
-            {isRegistering ? "Registering..." : "Register New Security Key"}
-          </Button>
-        </Box>
+            <Alert severity="info">
+              Remove the security key used for
+              verification. Insert the new key and
+              click Continue registration.
+            </Alert>
 
-        {message ? <Alert severity="success">{message}</Alert> : null}
-        {error ? <Alert severity="error">{error}</Alert> : null}
+            <Box
+              display="flex"
+              gap={1}
+              flexWrap="wrap"
+            >
+              <Button
+                variant="contained"
+                onClick={doRegisterKey}
+                disabled={isRegistering}
+              >
+                {isRegistering
+                  ? "Registering..."
+                  : "Continue registration"}
+              </Button>
+
+              <Button
+                variant="outlined"
+                onClick={cancelRegistration}
+                disabled={isRegistering}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Stack>
+        )}
+
+        {message ? (
+          <Alert severity="success">
+            {message}
+          </Alert>
+        ) : null}
+
+        {error ? (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        ) : null}
 
         <Box>
-          <Typography variant="subtitle1" fontWeight={700} mb={1}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            mb={1}
+          >
             Registered keys
           </Typography>
 
           {credentials.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
               No security keys registered yet.
             </Typography>
           ) : (
@@ -293,7 +517,8 @@ export default function WebAuthnManagementForm({
                   disableGutters
                   sx={{
                     display: "block",
-                    border: "1px solid #e5e7eb",
+                    border:
+                      "1px solid #e5e7eb",
                     borderRadius: 2,
                     p: 2,
                     mb: 1.5,
@@ -301,14 +526,22 @@ export default function WebAuthnManagementForm({
                 >
                   <Stack spacing={1.5}>
                     <ListItemText
-                      primary={credential.name || "Unnamed key"}
+                      primary={
+                        credential.name ||
+                        "Unnamed key"
+                      }
                       secondary={
                         <>
-                          Added: {new Date(credential.createdAt).toLocaleString()}
+                          Added:{" "}
+                          {new Date(
+                            credential.createdAt
+                          ).toLocaleString()}
                           <br />
                           Last used:{" "}
                           {credential.lastUsedAt
-                            ? new Date(credential.lastUsedAt).toLocaleString()
+                            ? new Date(
+                                credential.lastUsedAt
+                              ).toLocaleString()
                             : "Never"}
                         </>
                       }
@@ -316,27 +549,43 @@ export default function WebAuthnManagementForm({
 
                     <TextField
                       label="Rename key"
-                      value={renameValues[credential.id] ?? ""}
-                      onChange={(e) =>
-                        setRenameValues((prev) => ({
-                          ...prev,
-                          [credential.id]: e.target.value,
-                        }))
+                      value={
+                        renameValues[
+                          credential.id
+                        ] ?? ""
+                      }
+                      onChange={(event) =>
+                        setRenameValues(
+                          (previous) => ({
+                            ...previous,
+                            [credential.id]:
+                              event.target.value,
+                          })
+                        )
                       }
                       fullWidth
                       disabled={!totpEnabled}
                     />
 
-                    <Box display="flex" gap={1} flexWrap="wrap">
+                    <Box
+                      display="flex"
+                      gap={1}
+                      flexWrap="wrap"
+                    >
                       <Button
                         variant="outlined"
                         onClick={() =>
                           openReauthFor({
                             type: "rename",
-                            credentialId: credential.id,
+                            credentialId:
+                              credential.id,
                           })
                         }
-                        disabled={busyCredentialId === credential.id || !totpEnabled}
+                        disabled={
+                          busyCredentialId ===
+                            credential.id ||
+                          !totpEnabled
+                        }
                       >
                         Rename
                       </Button>
@@ -347,10 +596,15 @@ export default function WebAuthnManagementForm({
                         onClick={() =>
                           openReauthFor({
                             type: "delete",
-                            credentialId: credential.id,
+                            credentialId:
+                              credential.id,
                           })
                         }
-                        disabled={busyCredentialId === credential.id || !totpEnabled}
+                        disabled={
+                          busyCredentialId ===
+                            credential.id ||
+                          !totpEnabled
+                        }
                       >
                         Remove
                       </Button>
@@ -366,8 +620,16 @@ export default function WebAuthnManagementForm({
       <SensitiveActionReauthDialog
         open={reauthOpen}
         purpose="webauthn_management"
-        title="Confirm security key change"
-        description="To manage security keys, enter your password, current TOTP code, and confirm with a working registered security key."
+        title={
+          pendingAction?.type === "register"
+            ? "Confirm with an existing security key"
+            : "Confirm security key change"
+        }
+        description={
+          pendingAction?.type === "register"
+            ? "First confirm this action with one of your already registered security keys. After verification, remove it and insert the new security key."
+            : "To manage security keys, enter your password, current TOTP code, and confirm with a working registered security key."
+        }
         totpRequired
         onClose={() => {
           setReauthOpen(false);

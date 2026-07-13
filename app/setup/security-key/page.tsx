@@ -4,6 +4,8 @@ import { countAdminSecurityKeys } from "@/lib/bootstrap/bootstrap.service";
 import { prisma } from "@/lib/prisma/prisma.client";
 import SetupSecurityKeyForm from "@/components/forms/SetupSecurityKeyForm";
 
+export const dynamic = "force-dynamic";
+
 const REQUIRED_SECURITY_KEYS = 2;
 
 export default async function SetupSecurityKeyPage() {
@@ -23,7 +25,7 @@ export default async function SetupSecurityKeyPage() {
   ]);
 
   if (keyCount >= REQUIRED_SECURITY_KEYS) {
-    redirect("/admin/dashboard");
+    redirect("/admin/smtp");
   }
 
   return (
